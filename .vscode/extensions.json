@@ -14,7 +14,7 @@
     "codezombiech.gitignore",            // Gitignore - .gitignore file support
     "sonarsource.sonarlint-vscode",      // SonarLint - Code quality and security analysis
     "davidanson.vscode-markdownlint",    // MarkdownLint - Markdown linting
-    "ryanluker.vscode-coverage-gutters", // Coverage Gutters - Test coverage visualization
+    "ryanluker.vscode-coverage-gutters"  // Coverage Gutters - Test coverage visualization
   ],
 
   "unwantedRecommendations": [

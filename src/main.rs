@@ -1,4 +1,5 @@
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
 use rocket::serde::{Deserialize, Serialize, json::Json};
 use rocket::{State, http::Status};
@@ -104,10 +105,22 @@ impl From<Player> for PlayerResponse {
 
 type PlayerCollection = Mutex<Vec<Player>>;
 
+/// Load players from JSON file at startup.
+///
+/// # Panics
+///
+/// Panics if `players.json` is missing or malformed. This is intentional
+/// fail-fast behavior - the application cannot function without player data.
+///
+/// # Path Requirements
+///
+/// Expects `players.json` in the current working directory. When running:
+/// - Development: `cargo run` from project root
+/// - Production: Execute binary from directory containing `players.json`
 fn load_players() -> Vec<Player> {
     let data = std::fs::read_to_string("players.json")
-        .expect("Failed to read players.json");
-    serde_json::from_str(&data).expect("Failed to parse players.json")
+        .expect("Failed to read players.json - ensure file exists in working directory");
+    serde_json::from_str(&data).expect("Failed to parse players.json - check JSON syntax")
 }
 
 // ============================================================================
@@ -135,7 +148,10 @@ fn get_all_players(players: &State<PlayerCollection>) -> Json<Vec<PlayerResponse
 }
 
 #[get("/players/<id>")]
-fn get_player_by_id(id: u32, players: &State<PlayerCollection>) -> Result<Json<PlayerResponse>, Status> {
+fn get_player_by_id(
+    id: u32,
+    players: &State<PlayerCollection>,
+) -> Result<Json<PlayerResponse>, Status> {
     let players = players.lock().unwrap();
     players
         .iter()
@@ -165,7 +181,10 @@ fn create_player(
     let mut players = players.lock().unwrap();
 
     // Check for duplicate squad number
-    if players.iter().any(|p| p.squad_number == player_request.squad_number) {
+    if players
+        .iter()
+        .any(|p| p.squad_number == player_request.squad_number)
+    {
         return Err(Status::Conflict);
     }
 
@@ -232,9 +251,9 @@ fn delete_player(id: u32, players: &State<PlayerCollection>) -> Status {
 #[launch]
 fn rocket() -> _ {
     let players = PlayerCollection::new(load_players());
-    rocket::build()
-        .manage(players)
-        .mount("/", routes![
+    rocket::build().manage(players).mount(
+        "/",
+        routes![
             index,
             health,
             get_all_players,
@@ -243,5 +262,6 @@ fn rocket() -> _ {
             create_player,
             update_player,
             delete_player,
-        ])
+        ],
+    )
 }
