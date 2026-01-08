@@ -72,7 +72,7 @@
         "dateOfBirth": "1988-02-14T00:00:00.000Z",
         "squadNumber": 11,
         "position": "Right Winger",
-        "abbrPosition": "LW",
+        "abbrPosition": "RW",
         "team": "SL Benfica",
         "league": "Liga Portugal",
         "starting11": true
@@ -177,7 +177,7 @@
         "squadNumber": 2,
         "position": "Right-Back",
         "abbrPosition": "RB",
-        "team": "Villareal",
+        "team": "Villarreal",
         "league": "La Liga",
         "starting11": false
     },
@@ -190,7 +190,7 @@
         "squadNumber": 4,
         "position": "Right-Back",
         "abbrPosition": "RB",
-        "team": "Nottingham Forrest",
+        "team": "Nottingham Forest",
         "league": "Premier League",
         "starting11": false
     },
