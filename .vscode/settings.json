@@ -1,0 +1,12 @@
+{
+  "editor.rulers": [80, 120],
+  "[rust]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "rust-analyzer.check.command": "clippy",
+  "sonarlint.connectedMode.project": {
+    "connectionId": "nanotaboada",
+    "projectKey": "nanotaboada_rust-samples-rocket-restful"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Rust: Launch Rocket (Debug)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/${workspaceFolderBasename}",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "cargo build",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Rocket has launched from http://([0-9.:]+)",
+        "uriFormat": "http://%s"
+      }
+    }
+  ]
+}
