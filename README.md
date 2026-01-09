@@ -194,6 +194,16 @@ cargo test -- --nocapture
 cargo test -- --show-output
 ```
 
+## CI/CD
+
+The project uses GitHub Actions with sequential job execution:
+
+### Pipeline
+
+Format → Lint → Build → Test
+
+Each job depends on the previous one succeeding. This provides fail-fast feedback and saves CI resources.
+
 ## Command Summary
 
 | Command | Description |
