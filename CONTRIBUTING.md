@@ -9,11 +9,39 @@ We value **incremental, detail‑first contributions** over big rewrites or abst
 
 ## 2. Code & Commit Conventions
 
+- **Branch Naming**
+  Follow [Conventional Branch](https://conventional-branch.github.io/) specification:
+  - `ci/<description>` for CI/CD changes
+  - `docs/<description>` for documentation
+  - `refactor/<description>` for refactoring
+  - `test/<description>` for tests
+
+  Example: `feat/15-players-crud-api`, `ci/separate-workflow-jobs`
+
 - **Conventional Commits**
   Follow <https://www.conventionalcommits.org/en/v1.0.0/>:
   - `feat: …` for new features
   - `fix: …` for bug fixes
   - `chore: …` for maintenance
+  - `ci: …` for CI/CD changes
+  - `docs: …` for documentation
+
+- **Commit Message Format**
+  - **Header** (first line): Max 80 characters
+  - **Body** (optional): Max 80 characters per line, blank line after header
+  - **Footer** (optional): Reference issues (e.g., `Closes #15`)
+
+  Example:
+
+  ```text
+  feat: add player CRUD endpoints (#15)
+
+  - Implement GET, POST, PUT, DELETE routes for player management
+  - Add squad number uniqueness validation
+  - Configure server to run on port 9000
+
+  Closes #15
+  ```
 
 - **Logical Commits**
   Group changes by purpose. It's okay to have multiple commits in a PR, but if they're mere checkpoints, squash them into a single logical commit.
