@@ -19,7 +19,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
@@ -33,7 +33,7 @@ jobs:
     if: always() && (needs.commitlint.result == 'success' || needs.commitlint.result == 'skipped')
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -49,7 +49,7 @@ jobs:
     needs: format
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -74,7 +74,7 @@ jobs:
     needs: lint
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
