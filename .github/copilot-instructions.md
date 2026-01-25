@@ -1,14 +1,14 @@
 # GitHub Copilot Instructions
 
-> **⚡ Token Efficiency Note**: This is a minimal pointer file (~500 tokens, auto-loaded by Copilot).  
-> For complete operational details, reference: `#file:AGENTS.md` (~2,500 tokens, loaded on-demand)  
+> **⚡ Token Efficiency Note**: This is a minimal pointer file (~500 tokens, auto-loaded by Copilot).
+> For complete operational details, reference: `#file:AGENTS.md` (~2,500 tokens, loaded on-demand)
 > For specialized knowledge, use: `#file:SKILLS/<skill-name>/SKILL.md` (loaded on-demand when needed)
 
 ## 🎯 Quick Context
 
-**Project**: Rocket-based REST API demonstrating Rust async patterns  
-**Stack**: Rust 2024 • Rocket 0.5 • Serde • In-memory storage • Docker  
-**Pattern**: Single-file PoC with routes + state management  
+**Project**: Rocket-based REST API demonstrating Rust async patterns
+**Stack**: Rust 2024 • Rocket 0.5 • Serde • In-memory storage • Docker
+**Pattern**: Single-file PoC with routes + state management
 **Philosophy**: Learning-focused, start simple before modularizing
 
 ## 📐 Core Conventions
@@ -28,7 +28,7 @@ Route Handler → Mutex<Vec<Player>> → Response
 ```
 
 - **Routes**: Rocket route handlers with guards
-- **State**: Thread-safe `Mutex<Vec<Player>>` 
+- **State**: Thread-safe `Mutex<Vec<Player>>`
 - **Models**: Separate structs for Request/Response/Internal
 - **Serialization**: Serde for JSON (de)serialization
 - **Future**: SQLite persistence planned (Issue #23)
@@ -67,13 +67,13 @@ cargo test
 # Docker
 docker compose up
 
-# API: http://localhost:8000/api/players
+# API: http://localhost:8000/players
 ```
 
 ## 📚 Need More Detail?
 
-**For operational procedures**: Load `#file:AGENTS.md`  
-**For Docker expertise**: *(Planned)* `#file:SKILLS/docker-containerization/SKILL.md`  
+**For operational procedures**: Load `#file:AGENTS.md`
+**For Docker expertise**: *(Planned)* `#file:SKILLS/docker-containerization/SKILL.md`
 **For SQLite integration**: See GitHub Issue #23 for planned enhancement
 
 ---
