@@ -19,7 +19,7 @@ mod routes;
 mod services;
 mod state;
 
-use state::player_collection::{initialize_players, PlayerCollection};
+use state::player_collection::{PlayerCollection, initialize_players};
 
 // ============================================================================
 // ROCKET LAUNCH
