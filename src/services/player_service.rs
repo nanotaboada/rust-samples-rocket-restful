@@ -6,20 +6,39 @@
 
 use crate::models::player::{Player, PlayerRequest, PlayerResponse};
 
-/// Error types for player creation
+/// Error types for player creation operations.
+///
+/// Represents validation failures that can occur when creating a new player.
 #[derive(Debug)]
 pub enum CreateError {
+    /// The squad number is already assigned to another player
     DuplicateSquadNumber,
 }
 
-/// Error types for player updates
+/// Error types for player update operations.
+///
+/// Represents failures that can occur when updating an existing player.
 #[derive(Debug)]
 pub enum UpdateError {
+    /// The player with the given ID does not exist
     NotFound,
+    /// The squad number is already assigned to a different player
     DuplicateSquadNumber,
 }
 
-/// Get all players as responses
+/// Retrieves all players and converts them to response format.
+///
+/// # Arguments
+/// * `players` - Slice of all players in the collection
+///
+/// # Returns
+/// Vector of player responses ready for JSON serialization
+///
+/// # Example
+/// ```ignore
+/// let players = vec![/* player data */];
+/// let responses = get_all(&players);
+/// ```
 pub fn get_all(players: &[Player]) -> Vec<PlayerResponse> {
     players
         .iter()
@@ -27,7 +46,15 @@ pub fn get_all(players: &[Player]) -> Vec<PlayerResponse> {
         .collect()
 }
 
-/// Find a player by ID
+/// Finds a player by their unique ID.
+///
+/// # Arguments
+/// * `players` - Slice of all players in the collection
+/// * `id` - Unique identifier of the player to find
+///
+/// # Returns
+/// * `Some(PlayerResponse)` if a player with the given ID exists
+/// * `None` if no player has the specified ID
 pub fn get_by_id(players: &[Player], id: u32) -> Option<PlayerResponse> {
     players
         .iter()
@@ -35,7 +62,15 @@ pub fn get_by_id(players: &[Player], id: u32) -> Option<PlayerResponse> {
         .map(|p| PlayerResponse::from(p.clone()))
 }
 
-/// Find a player by squad number
+/// Finds a player by their squad number (jersey number).
+///
+/// # Arguments
+/// * `players` - Slice of all players in the collection
+/// * `squad_number` - Jersey number of the player to find
+///
+/// # Returns
+/// * `Some(PlayerResponse)` if a player with the given squad number exists
+/// * `None` if no player has the specified squad number
 pub fn get_by_squad_number(players: &[Player], squad_number: u32) -> Option<PlayerResponse> {
     players
         .iter()
@@ -43,7 +78,25 @@ pub fn get_by_squad_number(players: &[Player], squad_number: u32) -> Option<Play
         .map(|p| PlayerResponse::from(p.clone()))
 }
 
-/// Create a new player with validation
+/// Creates a new player with automatic ID assignment and validation.
+///
+/// Validates that the squad number is not already in use, generates a new unique ID
+/// (max current ID + 1), and adds the player to the collection.
+///
+/// # Arguments
+/// * `players` - Mutable reference to the player collection
+/// * `request` - Player data from the API request (without ID)
+///
+/// # Returns
+/// * `Ok(PlayerResponse)` with the newly created player including assigned ID
+/// * `Err(CreateError::DuplicateSquadNumber)` if the squad number is already taken
+///
+/// # Example
+/// ```ignore
+/// let mut players = vec![];
+/// let request = PlayerRequest { squad_number: 10, /* ... */ };
+/// let result = create(&mut players, request);
+/// ```
 pub fn create(
     players: &mut Vec<Player>,
     request: PlayerRequest,
@@ -67,7 +120,23 @@ pub fn create(
     Ok(response)
 }
 
-/// Update an existing player with validation
+/// Updates an existing player's information with validation.
+///
+/// Validates that the player exists and that the new squad number (if changed)
+/// is not already assigned to another player. Preserves the player's original ID.
+///
+/// # Arguments
+/// * `players` - Mutable reference to the player collection
+/// * `id` - ID of the player to update
+/// * `request` - New player data from the API request
+///
+/// # Returns
+/// * `Ok(PlayerResponse)` with the updated player data
+/// * `Err(UpdateError::NotFound)` if no player with the given ID exists
+/// * `Err(UpdateError::DuplicateSquadNumber)` if the new squad number is taken by another player
+///
+/// # Note
+/// A player can keep their current squad number without triggering a duplicate error.
 pub fn update(
     players: &mut Vec<Player>,
     id: u32,
@@ -96,7 +165,17 @@ pub fn update(
     Ok(response)
 }
 
-/// Delete a player by ID, returns true if deleted
+/// Deletes a player from the collection by their ID.
+///
+/// Uses `retain` to remove the player matching the given ID.
+///
+/// # Arguments
+/// * `players` - Mutable reference to the player collection
+/// * `id` - ID of the player to delete
+///
+/// # Returns
+/// * `true` if a player was found and deleted
+/// * `false` if no player with the given ID existed
 pub fn delete(players: &mut Vec<Player>, id: u32) -> bool {
     let initial_len = players.len();
     players.retain(|p| p.id != id);
