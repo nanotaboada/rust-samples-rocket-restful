@@ -84,7 +84,7 @@ fn test_request_get_player_id_existing_response_body_player() {
     assert_eq!(player.abbr_position, "RW");
     assert_eq!(player.team, "Inter Miami CF");
     assert_eq!(player.league, "Major League Soccer");
-    assert_eq!(player.starting11, true);
+    assert!(player.starting11);
 }
 
 // GET /players/{id} with nonexistent ID returns 404 Not Found
@@ -120,7 +120,7 @@ fn test_request_get_player_squadnumber_existing_response_body_player() {
     assert_eq!(player.abbr_position, "RW");
     assert_eq!(player.team, "Inter Miami CF");
     assert_eq!(player.league, "Major League Soccer");
-    assert_eq!(player.starting11, true);
+    assert!(player.starting11);
 }
 
 // GET /players/squadnumber/{squad_number} with nonexistent number returns 404 Not Found
@@ -157,7 +157,7 @@ fn test_request_post_player_body_valid_response_body_created() {
     assert_eq!(response.abbr_position, "AM");
     assert_eq!(response.team, "Atlanta United FC");
     assert_eq!(response.league, "Major League Soccer");
-    assert_eq!(response.starting11, false);
+    assert!(!response.starting11);
     assert_eq!(players.len(), 26);
 }
 
@@ -230,7 +230,7 @@ fn test_request_put_player_id_existing_body_valid_response_body_updated() {
     assert_eq!(response.abbr_position, "GK");
     assert_eq!(response.team, "Aston Villa FC");
     assert_eq!(response.league, "Premier League");
-    assert_eq!(response.starting11, true);
+    assert!(response.starting11);
 }
 
 // PUT /players/{id} with unknown ID returns 404 Not Found

@@ -166,3 +166,4 @@ curl -X DELETE http://localhost:9000/players/1
 - **Squad number uniqueness**: Enforced at service layer (returns CreateError/UpdateError)
 - **Auto-incrementing IDs**: Generated in-memory, not persistent
 - **No authentication**: Educational PoC - not production-ready
+- **Function parameters**: Use `&[T]` or `&mut [T]` instead of `&Vec<T>` or `&mut Vec<T>` when Vec-specific methods (push, retain, etc.) aren't needed

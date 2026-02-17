@@ -138,7 +138,7 @@ pub fn create(
 /// # Note
 /// A player can keep their current squad number without triggering a duplicate error.
 pub fn update(
-    players: &mut Vec<Player>,
+    players: &mut [Player],
     id: u32,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, UpdateError> {

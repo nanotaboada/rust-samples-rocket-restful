@@ -22,6 +22,7 @@
 - **DTOs**: Separate PlayerRequest (input), Player (storage), PlayerResponse (output)
 - **Modules**: Each layer in own directory (routes/, services/, state/, models/)
 - **Safety**: Never unwrap() in handlers - use Result or Option
+- **Function Parameters**: Use `&[T]` or `&mut [T]` instead of `&Vec<T>` or `&mut Vec<T>` when Vec-specific methods aren't needed
 
 ## Testing
 - **Location**: Integration tests in tests/ directory
@@ -37,10 +38,11 @@
 - Missing error propagation with `?`
 - Global mutable state without Mutex
 - Inline comments between AAA test sections
+- Using `&Vec<T>` or `&mut Vec<T>` when slice would suffice (use `&[T]` or `&mut [T]`)
 
 ## Pre-commit Checks
 1. `cargo fmt` - auto-format code (required)
-2. `cargo clippy -- -D warnings` - must pass with zero warnings
+2. `cargo clippy --all-targets --all-features -- -D warnings` - must pass with zero warnings
 3. `cargo test` - all tests must pass
 4. `cargo build` - must compile successfully
 
