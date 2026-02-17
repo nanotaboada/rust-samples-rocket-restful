@@ -1,5 +1,5 @@
 {
-  "editor.rulers": [80, 120],
+  "editor.rulers": [{ "column": 127 }],
   "[rust]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
