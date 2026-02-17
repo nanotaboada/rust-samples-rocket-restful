@@ -60,19 +60,21 @@ pub struct PlayerResponse {
 // ============================================================================
 
 impl PlayerRequest {
-    /// Convert a PlayerRequest into a Player with the given ID
-    pub fn to_player(&self, id: u32) -> Player {
+    /// Convert a PlayerRequest into a Player with the given ID.
+    ///
+    /// Consumes the request to avoid cloning String fields.
+    pub fn into_player(self, id: u32) -> Player {
         Player {
             id,
-            first_name: self.first_name.clone(),
-            middle_name: self.middle_name.clone(),
-            last_name: self.last_name.clone(),
-            date_of_birth: self.date_of_birth.clone(),
+            first_name: self.first_name,
+            middle_name: self.middle_name,
+            last_name: self.last_name,
+            date_of_birth: self.date_of_birth,
             squad_number: self.squad_number,
-            position: self.position.clone(),
-            abbr_position: self.abbr_position.clone(),
-            team: self.team.clone(),
-            league: self.league.clone(),
+            position: self.position,
+            abbr_position: self.abbr_position,
+            team: self.team,
+            league: self.league,
             starting11: self.starting11,
         }
     }
@@ -91,6 +93,24 @@ impl From<Player> for PlayerResponse {
             abbr_position: player.abbr_position,
             team: player.team,
             league: player.league,
+            starting11: player.starting11,
+        }
+    }
+}
+
+impl From<&Player> for PlayerResponse {
+    fn from(player: &Player) -> Self {
+        PlayerResponse {
+            id: player.id,
+            first_name: player.first_name.clone(),
+            middle_name: player.middle_name.clone(),
+            last_name: player.last_name.clone(),
+            date_of_birth: player.date_of_birth.clone(),
+            squad_number: player.squad_number,
+            position: player.position.clone(),
+            abbr_position: player.abbr_position.clone(),
+            team: player.team.clone(),
+            league: player.league.clone(),
             starting11: player.starting11,
         }
     }

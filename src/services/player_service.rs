@@ -40,10 +40,7 @@ pub enum UpdateError {
 /// let responses = get_all(&players);
 /// ```
 pub fn get_all(players: &[Player]) -> Vec<PlayerResponse> {
-    players
-        .iter()
-        .map(|p| PlayerResponse::from(p.clone()))
-        .collect()
+    players.iter().map(PlayerResponse::from).collect()
 }
 
 /// Finds a player by their unique ID.
@@ -59,7 +56,7 @@ pub fn get_by_id(players: &[Player], id: u32) -> Option<PlayerResponse> {
     players
         .iter()
         .find(|p| p.id == id)
-        .map(|p| PlayerResponse::from(p.clone()))
+        .map(PlayerResponse::from)
 }
 
 /// Finds a player by their squad number (jersey number).
@@ -75,7 +72,7 @@ pub fn get_by_squad_number(players: &[Player], squad_number: u32) -> Option<Play
     players
         .iter()
         .find(|p| p.squad_number == squad_number)
-        .map(|p| PlayerResponse::from(p.clone()))
+        .map(PlayerResponse::from)
 }
 
 /// Creates a new player with automatic ID assignment and validation.
@@ -113,8 +110,8 @@ pub fn create(
     let new_id = players.iter().map(|p| p.id).max().unwrap_or(0) + 1;
 
     // Create and add new player
-    let new_player = request.to_player(new_id);
-    let response = PlayerResponse::from(new_player.clone());
+    let new_player = request.into_player(new_id);
+    let response = PlayerResponse::from(&new_player);
     players.push(new_player);
 
     Ok(response)
@@ -158,8 +155,8 @@ pub fn update(
     }
 
     // Update player
-    let updated_player = request.to_player(id);
-    let response = PlayerResponse::from(updated_player.clone());
+    let updated_player = request.into_player(id);
+    let response = PlayerResponse::from(&updated_player);
     players[player_index] = updated_player;
 
     Ok(response)
