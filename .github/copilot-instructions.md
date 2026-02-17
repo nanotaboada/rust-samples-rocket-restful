@@ -1,81 +1,51 @@
-# GitHub Copilot Instructions
+# Copilot Instructions
 
-> **⚡ Token Efficiency Note**: This is a minimal pointer file (~500 tokens, auto-loaded by Copilot).
-> For complete operational details, reference: `#file:AGENTS.md` (~2,500 tokens, loaded on-demand)
-> For specialized knowledge, use: `#file:SKILLS/<skill-name>/SKILL.md` (loaded on-demand when needed)
+## Stack
+- Rust 2024 Edition (rust-toolchain.toml enforced)
+- Rocket 0.5 (async web framework)
+- Serde (JSON serialization)
+- In-memory storage: Mutex<Vec<Player>>
+- Future: SQLite (Issue #23)
 
-## 🎯 Quick Context
+## Project Patterns
+- **Layered Architecture**: Routes → Services → State
+  - Routes: HTTP concerns only (controllers)
+  - Services: Business logic, validation, future caching
+  - State: Data access layer (thread-safe)
+- **Dependency Management**: Rocket state injection via `State<T>`
+- **Error Handling**: `Result<T, CustomError>` with domain-specific error types
+- **Async**: All route handlers are async by default
 
-**Project**: Rocket-based REST API demonstrating Rust async patterns
-**Stack**: Rust 2024 • Rocket 0.5 • Serde • In-memory storage • Docker
-**Pattern**: Single-file PoC with routes + state management
-**Philosophy**: Learning-focused, start simple before modularizing
+## Code Conventions
+- **Naming**: snake_case (functions/vars), PascalCase (types/traits)
+- **Ownership**: Minimize clones, prefer references
+- **DTOs**: Separate PlayerRequest (input), Player (storage), PlayerResponse (output)
+- **Modules**: Each layer in own directory (routes/, services/, state/, models/)
+- **Safety**: Never unwrap() in handlers - use Result or Option
+- **Function Parameters**: Use `&[T]` or `&mut [T]` instead of `&Vec<T>` or `&mut Vec<T>` when Vec-specific methods aren't needed
 
-## 📐 Core Conventions
+## Testing
+- **Location**: Integration tests in tests/ directory
+- **Pattern**: Arrange/Act/Assert with section comments
+- **Naming**: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
+- **Fixtures**: Use dedicated fixture functions (not stubs/fakes)
+- **Assertions**: Verify complete response objects, not random fields
 
-- **Naming**: snake_case (functions/variables), PascalCase (types/traits)
-- **Ownership**: Minimize clones, use references where possible
-- **Error Handling**: `Result<T, E>` with proper error types
-- **Async**: Rocket handlers are async by default
-- **Safety**: No `unwrap()` in production paths
-
-## 🏗️ Architecture at a Glance
-
-```
-Route Handler → Mutex<Vec<Player>> → Response
-        ↓
-   Validation
-```
-
-- **Routes**: Rocket route handlers with guards
-- **State**: Thread-safe `Mutex<Vec<Player>>`
-- **Models**: Separate structs for Request/Response/Internal
-- **Serialization**: Serde for JSON (de)serialization
-- **Future**: SQLite persistence planned (Issue #23)
-
-## ✅ Copilot Should
-
-- Generate idiomatic Rust code with proper lifetimes
-- Use Rocket state management correctly (`State<AppState>`)
-- Follow ownership rules (minimize unnecessary clones)
-- Write tests with Rocket's testing framework
-- Apply Serde attributes for JSON mapping
-- Use proper HTTP status codes with Rocket's `Status`
-- Handle errors with `Result` types
-
-## 🚫 Copilot Should Avoid
-
-- Using `unwrap()` or `expect()` in handlers
+## Avoid
+- `unwrap()` or `expect()` in production paths
 - Unnecessary `.clone()` calls
 - Blocking operations in async handlers
 - Missing error propagation with `?`
-- Global mutable state without synchronization
-- Ignoring clippy warnings
+- Global mutable state without Mutex
+- Inline comments between AAA test sections
+- Using `&Vec<T>` or `&mut Vec<T>` when slice would suffice (use `&[T]` or `&mut [T]`)
 
-## ⚡ Quick Commands
-
-```bash
-# Run with hot reload (if cargo-watch installed)
-cargo watch -x run
-
-# Run normally
-cargo run
-
-# Test
-cargo test
-
-# Docker
-docker compose up
-
-# API: http://localhost:8000/players
-```
-
-## 📚 Need More Detail?
-
-**For operational procedures**: Load `#file:AGENTS.md`
-**For Docker expertise**: *(Planned)* `#file:SKILLS/docker-containerization/SKILL.md`
-**For SQLite integration**: See GitHub Issue #23 for planned enhancement
+## Pre-commit Checks
+1. `cargo fmt` - auto-format code (required)
+2. `cargo clippy --all-targets --all-features -- -D warnings` - must pass with zero warnings
+3. `cargo test` - all tests must pass
+4. `cargo build` - must compile successfully
 
 ---
 
-💡 **Why this structure?** Copilot auto-loads this file on every chat (~500 tokens). Loading `AGENTS.md` or `SKILLS/` explicitly gives you deep context only when needed, saving 80% of your token budget!
+**For detailed workflows**: Reference `#file:AGENTS.md`

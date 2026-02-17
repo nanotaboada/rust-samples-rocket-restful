@@ -25,7 +25,7 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 - 🔒 **Thread-safe state management** with Mutex
 - ✅ **Type-safe request/response models**
 - 🎯 **Squad number uniqueness validation**
-- 📦 **Single-file implementation** (easy to learn and understand)
+- 📦 **Modular architecture** with clear separation of concerns
 
 ## Tech Stack
 
@@ -41,35 +41,65 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 ```tree
 /
 ├── src/
-│   └── main.rs            # Complete application (models, routes, handlers, state)
-├── players.json           # Pre-seeded player data (26 players)
-├── Cargo.toml             # Rust dependencies
-└── rust-toolchain.toml    # Rust version configuration
+│   ├── main.rs                      # Application entry point (~35 lines)
+│   ├── models/
+│   │   ├── mod.rs                   # Module exports
+│   │   └── player.rs                # Player, PlayerRequest, PlayerResponse structs
+│   ├── routes/
+│   │   ├── mod.rs                   # Module exports
+│   │   ├── health.rs                # Health check endpoint handler
+│   │   └── players.rs               # Player CRUD route handlers
+│   ├── services/
+│   │   ├── mod.rs                   # Module exports
+│   │   └── player_service.rs        # Business logic (CRUD operations, validation)
+│   └── state/
+│       ├── mod.rs                   # Module exports
+│       └── player_collection.rs     # Thread-safe state (Mutex<Vec<Player>>)
+├── players.json                     # Pre-seeded player data (26 players)
+├── Cargo.toml                       # Rust dependencies
+└── rust-toolchain.toml              # Rust version configuration
 ```
+
+### Module Responsibilities
+
+| Module | Responsibility |
+| ------ | -------------- |
+| **models** | Data structures for the player domain (Player, PlayerRequest, PlayerResponse) and conversions between them |
+| **state** | Thread-safe application state management using Mutex for concurrent access |
+| **services** | Pure business logic functions for CRUD operations, validation, and ID generation |
+| **routes** | HTTP endpoint handlers that delegate to services and handle HTTP concerns (status codes, JSON) |
+| **main.rs** | Application initialization, route mounting, and data loading |
 
 ## Architecture
 
-**Single-File Layered Architecture:**
+**Modular Layered Architecture:**
 
 ```text
-HTTP Request → Route Handler → State (Mutex) → In-Memory Storage → Response
+HTTP Request → Routes → Services → State (Mutex) → In-Memory Storage → Response
 ```
+
+**Dependency Flow:**
+
+- Routes → Services → State (unidirectional)
+- Services contain pure business logic, framework-agnostic
+- Routes handle HTTP concerns (status codes, JSON serialization)
+- State management is isolated from business logic
 
 **Data Flow:**
 
-- HTTP requests are received by Rocket route handlers
-- Route handlers access shared state via `State<PlayerCollection>`
-- Mutex ensures thread-safe access to the player collection
-- Responses use dedicated DTOs (PlayerRequest/PlayerResponse)
-- Internal storage uses the Player entity
+- HTTP requests are received by Rocket route handlers in `routes/`
+- Route handlers acquire locks and delegate to pure functions in `services/`
+- Services perform business logic (validation, CRUD) on borrowed data
+- Services return Results that routes convert to HTTP responses
+- Thread-safe state access via `Mutex<Vec<Player>>`
 
-**Layer Separation:**
+**Type Safety:**
 
-- **Player** - Internal storage entity
-- **PlayerRequest** - API input (`POST`/`PUT`, no ID)
+- **Player** - Internal storage entity (in `models/player.rs`)
+- **PlayerRequest** - API input for `POST`/`PUT` (no ID, system-generated)
 - **PlayerResponse** - API output (includes ID)
 
-This separation provides type safety and prevents accidental exposure of internal implementation details.
+This separation provides type safety, testability, and prevents accidental exposure of internal implementation details.
 
 ## API Reference
 
@@ -77,7 +107,6 @@ This separation provides type safety and prevents accidental exposure of interna
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `GET` | `/` | API welcome message |
 | `GET` | `/health` | Health check |
 | `GET` | `/players` | List all players |
 | `GET` | `/players/:id` | Get player by ID |

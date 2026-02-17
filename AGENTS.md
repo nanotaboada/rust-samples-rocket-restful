@@ -1,270 +1,169 @@
-# AGENTS.md
+# Agent Instructions
 
-> **⚡ Token Efficiency Note**: This file contains complete operational instructions (~2,500 tokens).  
-> **Auto-loaded**: NO (load explicitly with `#file:AGENTS.md` when you need detailed procedures)  
-> **When to load**: Complex workflows, troubleshooting, CI/CD setup, detailed architecture questions  
-> **Related files**: See `#file:.github/copilot-instructions.md` for quick context (auto-loaded, ~500 tokens)
+## Project Overview
 
----
+Educational REST API demonstrating Rocket web framework with layered architecture. Manages Argentina national football squad data with in-memory storage. Three-layer design (Routes → Services → State) prepares for future enhancements like caching, validation, and database persistence while teaching clean architecture principles.
 
-## Quick Start
+## Structure
 
-```bash
-# Build and run in development mode
-cargo run
-# Server starts on http://localhost:8000
-
-# Build release version
-cargo build --release
-
-# Run release binary
-./target/release/rust-samples-rocket-restful
+```tree
+/src                - application code
+  /models           - data structures (Player, PlayerRequest, PlayerResponse)
+  /routes           - HTTP handlers/controllers
+  /services         - business logic layer
+  /state            - data access layer
+/tests              - integration tests
+/players.json       - seed data (26 players)
+/.github            - CI/CD workflows (rust.yml)
+/Rocket.toml        - server configuration
+/rust-toolchain.toml - Rust 2024 edition lock
 ```
 
-## Rust Version
+## Architecture Rationale
 
-This project uses **Rust 2024 Edition** with toolchain specified in `rust-toolchain.toml`.
+**Layered vs Minimal**: This project uses three layers instead of minimal API style (routes directly accessing state) for educational purposes. The service layer will house future caching, validation, metrics, and complex business logic. This demonstrates enterprise patterns while keeping current CRUD operations simple.
 
-Rust will automatically use the correct version when you enter the project directory.
+**Layer Responsibilities**:
 
-## Development Workflow
+- **Routes**: HTTP-only concerns (parse requests, map to status codes)
+- **Services**: Pure business logic (no HTTP knowledge, returns Result types)
+- **State**: Thread-safe data access (Mutex<Vec<Player>>, future Repository pattern)
 
-### Running Tests
+## Common Workflows
 
-```bash
-# Run all tests with verbose output
-cargo test -- --nocapture
+### Adding a new endpoint
 
-# Run tests without output capture (shows print statements)
-cargo test -- --show-output
+1. Add route handler in `src/routes/players.rs` or new file
+2. Add service function in `src/services/player_service.rs`
+3. Add integration test in `tests/player_service_tests.rs`
+4. Update doc comments (///) with HTTP details and examples
 
-# Run specific test
-cargo test test_get_players -- --nocapture
+### Modifying player data structure
 
-# Run tests with release optimizations
-cargo test --release
-```
+1. Update model in `src/models/player.rs`
+2. Update affected service functions in `src/services/`
+3. Update route handlers in `src/routes/`
+4. Add/update tests with new fields
+5. Update `players.json` seed data if needed
 
-**Note**: This project uses in-memory storage (Mutex<Vec<Player>>), so tests are currently integration-style endpoint tests.
+### Adding database persistence (planned)
 
-### Code Quality
+1. Create `src/repositories/player_repository.rs`
+2. Replace Mutex<Vec<Player>> with Repository trait
+3. Update State layer to use repository
+4. Add migration management (SQLx or Diesel)
+5. Update tests to use test database
 
-```bash
-# Check code without building (fast feedback)
-cargo check
+### Running tests
 
-# Format code (auto-fix, must run before commit)
-cargo fmt
+- All tests: `cargo test`
+- Specific test: `cargo test test_request_get_players`
+- With output: `cargo test -- --nocapture`
+- CI validation: `cargo fmt -- --check && cargo clippy -- -D warnings && cargo test`
 
-# Check formatting without modifying files
-cargo fmt -- --check
+## Autonomy Levels
 
-# Run linter (clippy)
-cargo clippy
+### Proceed freely
 
-# Run clippy with warnings as errors (matches CI)
-cargo clippy -- -D warnings
-```
+- Route handlers and HTTP response mapping
+- Service layer business logic
+- Integration tests following AAA pattern
+- Doc comments (///) on public items
+- README and documentation updates
+- Bug fixes in existing code
 
-**Pre-commit checklist**:
-1. Run `cargo fmt` - auto-format all code
-2. Run `cargo clippy -- -D warnings` - must pass with no warnings
-3. Run `cargo test` - all tests must pass
-4. Run `cargo build` - must compile successfully
+### Ask before changing
 
-### Build Variants
+- Architecture (adding/removing layers)
+- Dependencies in Cargo.toml
+- CI/CD configuration (.github/workflows/)
+- Docker setup (Dockerfile, docker-compose.yml)
+- Rocket.toml server configuration
+- rust-toolchain.toml
 
-```bash
-# Development build (fast compile, slower runtime)
-cargo build
+### Never modify
 
-# Release build (slow compile, fast runtime)
-cargo build --release
-
-# Clean build artifacts
-cargo clean
-
-# Update dependencies
-cargo update
-```
-
-## Architecture
-
-**Single-File Architecture**: All code lives in `src/main.rs` for simplicity.
-
-**Layers within main.rs**:
-```rust
-// Data Models
-struct Player              // Internal storage entity (with id)
-struct PlayerRequest       // API input (no id)
-struct PlayerResponse      // API output (with id)
-
-// Application State
-struct PlayerCollection    // Mutex<Vec<Player>> for thread safety
-
-// Route Handlers
-#[get("/")] index          // Welcome message
-#[get("/health")] health   // Health check
-#[get("/players")] get_players
-#[get("/players/<id>")] get_player_by_id
-#[post("/players")] create_player
-#[put("/players/<id>")] update_player
-#[delete("/players/<id>")] delete_player
-
-// Main
-#[launch] rocket           // Rocket initialization with state
-```
-
-**Data Flow**:
-```
-HTTP Request → Rocket Router → Handler Function → Mutex<State> → Response
-```
-
-**Key Design Decisions**:
-- In-memory storage (no database) - data resets on restart
-- Mutex ensures thread-safe concurrent access
-- Separate DTOs for requests/responses (type safety)
-- JSON serialization via Serde
-- Auto-incrementing IDs generated in-memory
+- `.env` files (if they exist)
+- `players.json` seed data (without discussion)
+- Production deployment configurations
 
 ## Configuration
 
-### Rocket.toml
+**Server**: Rocket.toml defines address (0.0.0.0) and port (9000)
+**Override**: Use environment variables (ROCKET_PORT=9000, ROCKET_ADDRESS=127.0.0.1)
+**Toolchain**: Rust 2024 edition enforced via rust-toolchain.toml
 
-```toml
-[default]
-address = "0.0.0.0"
-port = 8000
-```
+## Testing Strategy
 
-You can override settings with environment variables:
-```bash
-ROCKET_PORT=9000 cargo run
-ROCKET_ADDRESS=127.0.0.1 cargo run
-```
-
-## Data Seeding
-
-**Seed data**: `players.json` - Contains 26 pre-configured football players (A-Z)
-
-Data loads on application startup from this JSON file into in-memory storage.
-
-**To modify seed data**: Edit `players.json` and restart the server.
-
-## CI/CD Pipeline
-
-### Continuous Integration (rust.yml)
-
-**Trigger**: Push to `main`/`master` or PR
-
-**Jobs**:
-1. **Setup**: Rust toolchain installation (from rust-toolchain.toml)
-2. **Format Check**: `cargo fmt -- --check`
-3. **Lint**: `cargo clippy -- -D warnings`
-4. **Build**: `cargo build --verbose`
-5. **Test**: `cargo test --verbose`
-
-**Local validation** (run this before pushing):
-```bash
-# Matches CI exactly
-cargo fmt -- --check && \
-cargo clippy -- -D warnings && \
-cargo build --verbose && \
-cargo test --verbose
-```
-
-**Quick pre-commit validation**:
-```bash
-# Auto-fix formatting, then validate
-cargo fmt && cargo clippy -- -D warnings && cargo test
-```
+**Current**: Integration tests calling service layer directly (no HTTP mocking needed)
+**Pattern**: Arrange/Act/Assert with section comments
+**Fixtures**: Dedicated functions for test data (not hardcoded)
+**Why service-level**: Tests business logic independently of HTTP, enables future endpoint tests with Rocket::local::blocking::Client
 
 ## Troubleshooting
 
 ### Port already in use
+
 ```bash
-# Kill process on port 8000
-lsof -ti:8000 | xargs kill -9
+lsof -ti:9000 | xargs kill -9
 ```
 
-### Compilation errors after update
+### Compilation errors after dependency update
+
 ```bash
-# Clean and rebuild
-cargo clean
-cargo build
+cargo clean && cargo build
 ```
 
-### Dependency conflicts
-```bash
-# Update Cargo.lock
-cargo update
+### Rust toolchain mismatch
 
-# Or reset to exact versions
-rm Cargo.lock
-cargo build
-```
-
-### Rust toolchain issues
 ```bash
-# Update Rust toolchain
 rustup update
-
-# Verify toolchain matches rust-toolchain.toml
-rustup show
+rustup show  # Verify matches rust-toolchain.toml
 ```
 
-### JSON parsing errors
+### JSON validation
+
 ```bash
-# Validate players.json syntax
 cat players.json | jq .
-
-# If jq not installed, check manually or use online JSON validator
 ```
 
-## Testing the API
+## API Testing
 
-### Using curl
+### Quick smoke test
+
 ```bash
 # Health check
-curl http://localhost:8000/health
+curl http://localhost:9000/health
 
 # Get all players
-curl http://localhost:8000/players
+curl http://localhost:9000/players
 
-# Get player by ID
-curl http://localhost:8000/players/1
-
-# Create player (ID auto-generated)
-curl -X POST http://localhost:8000/players \
-  -H "Content-Type: application/json" \
-  -d '{"firstName":"Pele","lastName":"Nascimento","club":"Santos","nationality":"Brazil","dateOfBirth":"1940-10-23","squadNumber":10}'
-
-# Update player
-curl -X PUT http://localhost:8000/players/1 \
-  -H "Content-Type: application/json" \
-  -d '{"firstName":"Diego","lastName":"Maradona","club":"Napoli","nationality":"Argentina","dateOfBirth":"1960-10-30","squadNumber":10}'
-
-# Delete player
-curl -X DELETE http://localhost:8000/players/1
+# Get by ID
+curl http://localhost:9000/players/1
 ```
 
-### Response Formats
+### CRUD operations
 
-**Success responses**:
-- `200 OK` - Successful GET/PUT/DELETE
-- `201 Created` - Successful POST
+```bash
+# Create (POST)
+curl -X POST http://localhost:9000/players \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Lionel","lastName":"Messi","club":"Inter Miami","nationality":"Argentina","dateOfBirth":"1987-06-24","squadNumber":10}'
 
-**Error responses**:
-- `404 Not Found` - Player ID doesn't exist
-- `400 Bad Request` - Invalid JSON or duplicate squad number
+# Update (PUT)
+curl -X PUT http://localhost:9000/players/1 \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Emiliano","lastName":"Martínez","club":"Aston Villa","nationality":"Argentina","dateOfBirth":"1992-09-02","squadNumber":23}'
 
-## Important Notes
+# Delete
+curl -X DELETE http://localhost:9000/players/1
+```
 
-- **In-memory storage**: All data is lost when the server restarts
-- **Thread safety**: Mutex protects concurrent access to player collection
-- **Squad number uniqueness**: Enforced - duplicate squad numbers are rejected
-- **No database**: This is intentional for simplicity - production apps should use persistent storage
-- **Single file**: All code in `src/main.rs` for learning clarity
-- **Auto-incrementing IDs**: Generated in-memory, not guaranteed unique across restarts
-- **Cargo.lock**: Committed to ensure reproducible builds
-- **Rust edition**: Uses 2024 edition features
+## Important Constraints
+
+- **In-memory storage**: Data resets on restart (intentional for simplicity)
+- **Thread safety**: Mutex required for concurrent access
+- **Squad number uniqueness**: Enforced at service layer (returns CreateError/UpdateError)
+- **Auto-incrementing IDs**: Generated in-memory, not persistent
+- **No authentication**: Educational PoC - not production-ready
+- **Function parameters**: Use `&[T]` or `&mut [T]` instead of `&Vec<T>` or `&mut Vec<T>` when Vec-specific methods (push, retain, etc.) aren't needed
