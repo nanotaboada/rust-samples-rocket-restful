@@ -38,6 +38,12 @@
 - Global mutable state without Mutex
 - Inline comments between AAA test sections
 
+## Pre-commit Checks
+1. `cargo fmt` - auto-format code (required)
+2. `cargo clippy -- -D warnings` - must pass with zero warnings
+3. `cargo test` - all tests must pass
+4. `cargo build` - must compile successfully
+
 ---
 
 **For detailed workflows**: Reference `#file:AGENTS.md`

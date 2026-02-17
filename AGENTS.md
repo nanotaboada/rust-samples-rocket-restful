@@ -61,13 +61,6 @@ Educational REST API demonstrating Rocket web framework with layered architectur
 - With output: `cargo test -- --nocapture`
 - CI validation: `cargo fmt -- --check && cargo clippy -- -D warnings && cargo test`
 
-### Pre-commit checks
-
-1. `cargo fmt` - auto-format code (required)
-2. `cargo clippy -- -D warnings` - must pass with zero warnings
-3. `cargo test` - all tests must pass
-4. `cargo build` - must compile successfully
-
 ## Autonomy Levels
 
 ### Proceed freely
@@ -96,7 +89,7 @@ Educational REST API demonstrating Rocket web framework with layered architectur
 
 ## Configuration
 
-**Server**: Rocket.toml defines address (0.0.0.0) and port (8000)
+**Server**: Rocket.toml defines address (0.0.0.0) and port (9000)
 **Override**: Use environment variables (ROCKET_PORT=9000, ROCKET_ADDRESS=127.0.0.1)
 **Toolchain**: Rust 2024 edition enforced via rust-toolchain.toml
 
@@ -112,7 +105,7 @@ Educational REST API demonstrating Rocket web framework with layered architectur
 ### Port already in use
 
 ```bash
-lsof -ti:8000 | xargs kill -9
+lsof -ti:9000 | xargs kill -9
 ```
 
 ### Compilation errors after dependency update
@@ -140,30 +133,30 @@ cat players.json | jq .
 
 ```bash
 # Health check
-curl http://localhost:8000/health
+curl http://localhost:9000/health
 
 # Get all players
-curl http://localhost:8000/players
+curl http://localhost:9000/players
 
 # Get by ID
-curl http://localhost:8000/players/1
+curl http://localhost:9000/players/1
 ```
 
 ### CRUD operations
 
 ```bash
 # Create (POST)
-curl -X POST http://localhost:8000/players \
+curl -X POST http://localhost:9000/players \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Lionel","lastName":"Messi","club":"Inter Miami","nationality":"Argentina","dateOfBirth":"1987-06-24","squadNumber":10}'
 
 # Update (PUT)
-curl -X PUT http://localhost:8000/players/1 \
+curl -X PUT http://localhost:9000/players/1 \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Emiliano","lastName":"Martínez","club":"Aston Villa","nationality":"Argentina","dateOfBirth":"1992-09-02","squadNumber":23}'
 
 # Delete
-curl -X DELETE http://localhost:8000/players/1
+curl -X DELETE http://localhost:9000/players/1
 ```
 
 ## Important Constraints
