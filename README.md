@@ -107,7 +107,6 @@ This separation provides type safety, testability, and prevents accidental expos
 
 | Method | Path | Description |
 | ------ | ---- | ----------- |
-| `GET` | `/` | API welcome message |
 | `GET` | `/health` | Health check |
 | `GET` | `/players` | List all players |
 | `GET` | `/players/:id` | Get player by ID |

@@ -18,10 +18,10 @@ use rocket::{State, delete, get, http::Status, post, put, routes, serde::json::J
 /// [{"id": 1, "firstName": "Lionel", "squadNumber": 10, ...}, ...]
 /// ```
 #[get("/players")]
-fn get_all_players(players: &State<PlayerCollection>) -> Json<Vec<PlayerResponse>> {
-    let players = players.lock().unwrap();
+fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerResponse>>, Status> {
+    let players = players.lock().map_err(|_| Status::InternalServerError)?;
     let response = player_service::get_all(&players);
-    Json(response)
+    Ok(Json(response))
 }
 
 /// GET /players/{id} - Retrieves a specific player by ID.
@@ -40,7 +40,7 @@ fn get_player_by_id(
     id: u32,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let players = players.lock().unwrap();
+    let players = players.lock().map_err(|_| Status::InternalServerError)?;
     player_service::get_by_id(&players, id)
         .map(Json)
         .ok_or(Status::NotFound)
@@ -62,7 +62,7 @@ fn get_player_by_squad_number(
     squad_number: u32,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let players = players.lock().unwrap();
+    let players = players.lock().map_err(|_| Status::InternalServerError)?;
     player_service::get_by_squad_number(&players, squad_number)
         .map(Json)
         .ok_or(Status::NotFound)
@@ -90,7 +90,7 @@ fn create_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<(Status, Json<PlayerResponse>), Status> {
-    let mut players = players.lock().unwrap();
+    let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
     match player_service::create(&mut players, player_request.into_inner()) {
         Ok(response) => Ok((Status::Created, Json(response))),
@@ -123,7 +123,7 @@ fn update_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let mut players = players.lock().unwrap();
+    let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
     match player_service::update(&mut players, id, player_request.into_inner()) {
         Ok(response) => Ok(Json(response)),
@@ -144,13 +144,13 @@ fn update_player(
 /// # Note
 /// Deletion is permanent and cannot be undone (in-memory storage).
 #[delete("/players/<id>")]
-fn delete_player(id: u32, players: &State<PlayerCollection>) -> Status {
-    let mut players = players.lock().unwrap();
+fn delete_player(id: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
+    let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
     if player_service::delete(&mut players, id) {
-        Status::NoContent
+        Ok(Status::NoContent)
     } else {
-        Status::NotFound
+        Err(Status::NotFound)
     }
 }
 
