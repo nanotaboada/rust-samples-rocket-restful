@@ -46,6 +46,24 @@
 3. `cargo test` - all tests must pass
 4. `cargo build` - must compile successfully
 
+## Commits
+- **Format**: Follow [Conventional Commits](https://www.conventionalcommits.org/) with issue number suffix
+- **Pattern**: `type(scope): description (#issue)` (max 80 chars)
+- **Examples**:
+  - `feat(api): add player stats endpoint (#42)`
+  - `fix(db): resolve connection pool leak (#88)`
+
+## Agent Mode
+After completing an implementation, always suggest:
+1. A **branch name** (e.g. `feat/add-player-stats-endpoint`)
+2. A **commit message** following the Conventional Commits pattern above, including Copilot as co-author:
+
+```
+feat(scope): description (#issue)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
 ---
 
 **For detailed workflows**: Reference `#file:AGENTS.md`
