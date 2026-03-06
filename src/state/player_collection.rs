@@ -1,18 +1,42 @@
-//! Player collection state and initialization.
+//! Thread-safe player collection state and seed data.
 //!
-//! Provides thread-safe storage for players using Mutex and initializes
-//! the collection with Argentina national team player data.
+//! Provides the storage type used across the whole application and seeds it
+//! with the Argentina 2022 World Cup squad at startup.
 
 use crate::models::player::Player;
 use std::sync::Mutex;
 
-/// Thread-safe player collection type
+/// Thread-safe player collection.
+///
+/// A type alias for `Mutex<Vec<Player>>`. Rocket shares application state
+/// across multiple async worker threads to handle concurrent requests.
+/// Wrapping the `Vec<Player>` in a [`std::sync::Mutex`] ensures that only
+/// one thread can read or modify the collection at a time, preventing data
+/// races.
+///
+/// ## Rust note: locking and `MutexGuard`
+/// Before accessing the inner `Vec`, callers must call `.lock()`:
+/// ```ignore
+/// let players = state.lock().map_err(|_| Status::InternalServerError)?;
+/// ```
+/// `lock()` blocks the current thread until no other thread holds the lock,
+/// then returns a `MutexGuard<Vec<Player>>`. The guard releases the lock
+/// automatically when it goes out of scope — this is the RAII pattern
+/// (Resource Acquisition Is Initialization), a core Rust idiom for
+/// deterministic resource cleanup without a garbage collector.
 pub type PlayerCollection = Mutex<Vec<Player>>;
 
-/// Initialize players with Argentina national team data.
+/// Seeds the player collection with the Argentina 2022 World Cup squad (26 players).
 ///
-/// Creates a typed collection of 26 players from the Argentina squad,
-/// eliminating the need for external JSON file loading.
+/// Called once at startup in [`main`](crate). Returns a plain `Vec<Player>`,
+/// which is then wrapped in a [`PlayerCollection`] (i.e. `Mutex`) before
+/// being handed to Rocket's state management via `.manage()`.
+///
+/// ## Rust note: `to_string()`
+/// String *literals* (`&str`, e.g. `"Martínez"`) are static references to
+/// read-only data baked into the binary. `.to_string()` allocates a new
+/// heap-owned `String`, which is required because the `Player` struct
+/// fields must own their data independently of the literal's lifetime.
 pub fn initialize_players() -> Vec<Player> {
     vec![
         Player {
