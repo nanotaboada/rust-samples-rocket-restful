@@ -21,10 +21,15 @@ mod state;
 
 use state::player_collection::{PlayerCollection, initialize_players};
 
-// ============================================================================
-// ROCKET LAUNCH
-// ============================================================================
-
+/// Configures and launches the Rocket web server.
+///
+/// ## Rust note: `#[launch]` macro
+/// `#[launch]` is a Rocket procedural macro that generates the actual `main()`
+/// function around this one. It sets up an async runtime (Tokio), calls
+/// `rocket()` to build the configured instance, and starts the HTTP server.
+///
+/// The `-> _` return type lets the compiler infer the full generic `Rocket<Build>`
+/// type, avoiding a verbose type annotation.
 #[launch]
 fn rocket() -> _ {
     let players = PlayerCollection::new(initialize_players());
