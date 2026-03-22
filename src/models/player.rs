@@ -36,7 +36,7 @@ use rocket::serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Player {
-    pub id: u32,
+    pub id: String,
     pub first_name: String,
     pub middle_name: String,
     pub last_name: String,
@@ -51,9 +51,12 @@ pub struct Player {
 
 /// Inbound payload for creating or updating a player.
 ///
-/// Received as the JSON request body for `POST /players` and `PUT /players/{id}`.
-/// The `id` field is intentionally absent — it is either assigned automatically
-/// on creation, or taken from the URL path on update.
+/// Received as the JSON request body for `POST /players` and
+/// `PUT /players/squadnumber/{squad_number}`.
+/// The `id` field is intentionally absent — it is assigned automatically on
+/// creation. `squad_number` is the natural key and is immutable once set: on
+/// `PUT` the value in the request body is ignored and the existing squad number
+/// is preserved.
 ///
 /// ## Rust note: missing `Clone` and `Serialize`
 /// This struct only needs `Deserialize` because it is only ever read from JSON.
@@ -85,7 +88,7 @@ pub struct PlayerRequest {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerResponse {
-    pub id: u32,
+    pub id: String,
     pub first_name: String,
     pub middle_name: String,
     pub last_name: String,
@@ -114,8 +117,10 @@ pub struct PlayerResponse {
 impl PlayerRequest {
     /// Maps a [`PlayerRequest`] into a [`Player`] by consuming it.
     ///
-    /// The `id` parameter is the externally assigned identifier (auto-generated
-    /// on creation, or taken from the URL path on update).
+    /// The `id` parameter is the externally assigned UUID (auto-generated on
+    /// creation). The `squad_number` stored on the resulting [`Player`] comes
+    /// from the request; callers that need to enforce immutability (e.g. `PUT`)
+    /// are responsible for overwriting it with the existing value afterwards.
     ///
     /// ## Rust note: `self` means ownership (move semantics)
     /// `self` (without `&`) means the method takes *ownership* of the
@@ -123,7 +128,7 @@ impl PlayerRequest {
     /// this call. In return, `String` fields are *moved* directly into the new
     /// `Player` without any heap allocation, making this a zero-cost operation.
     /// The borrow checker enforces this at compile time.
-    pub fn into_player(self, id: u32) -> Player {
+    pub fn into_player(self, id: String) -> Player {
         Player {
             id,
             first_name: self.first_name,
@@ -148,8 +153,8 @@ impl From<Player> for PlayerResponse {
     /// function. Each `String` field transfers its heap allocation directly
     /// to the new `PlayerResponse` — no copying occurs. The original `Player`
     /// is consumed and cannot be used after this call.
-    /// Primitive fields (`u32`, `bool`) implement the `Copy` trait, so they
-    /// are duplicated automatically without any explicit `.clone()`.
+    /// The primitive field (`u32`) and `bool` implement the `Copy` trait, so
+    /// they are duplicated automatically without any explicit `.clone()`.
     ///
     /// Use this variant when the original `Player` is no longer needed after
     /// the mapping (e.g. after removing it from the collection on update).
@@ -179,14 +184,14 @@ impl From<&Player> for PlayerResponse {
     /// Rust does not allow moving a value out of a reference that doesn't own
     /// it, each `String` field must be `.clone()`d to allocate a new
     /// independent copy on the heap.
-    /// Primitive fields (`u32`, `bool`) implement `Copy` and are duplicated
-    /// implicitly — no `.clone()` needed for them.
+    /// The primitive field (`u32`) and `bool` implement `Copy` and are
+    /// duplicated implicitly — no `.clone()` needed for them.
     ///
     /// Use this variant when the original `Player` must remain usable after
     /// the mapping (e.g. when iterating over the collection to build a list).
     fn from(player: &Player) -> Self {
         PlayerResponse {
-            id: player.id,
+            id: player.id.clone(),
             first_name: player.first_name.clone(),
             middle_name: player.middle_name.clone(),
             last_name: player.last_name.clone(),
