@@ -151,10 +151,7 @@ fn update_player(
 /// # Note
 /// Deletion is permanent and cannot be undone (in-memory storage).
 #[delete("/players/squadnumber/<squad_number>")]
-fn delete_player(
-    squad_number: u32,
-    players: &State<PlayerCollection>,
-) -> Result<Status, Status> {
+fn delete_player(squad_number: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
     let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
     if player_service::delete(&mut players, squad_number) {
