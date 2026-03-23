@@ -1,10 +1,11 @@
 //! Player business logic and CRUD operations.
 //!
 //! Provides pure functions for player management including validation,
-//! ID generation, and CRUD operations. These functions are framework-agnostic
+//! UUID generation, and CRUD operations. These functions are framework-agnostic
 //! and operate on borrowed data structures.
 
 use crate::models::player::{Player, PlayerRequest, PlayerResponse};
+use uuid::Uuid;
 
 /// Error types for player creation operations.
 ///
@@ -20,10 +21,8 @@ pub enum CreateError {
 /// Represents failures that can occur when updating an existing player.
 #[derive(Debug)]
 pub enum UpdateError {
-    /// The player with the given ID does not exist
+    /// No player with the given squad number exists
     NotFound,
-    /// The squad number is already assigned to a different player
-    DuplicateSquadNumber,
 }
 
 /// Retrieves all players and converts them to response format.
@@ -43,16 +42,16 @@ pub fn get_all(players: &[Player]) -> Vec<PlayerResponse> {
     players.iter().map(PlayerResponse::from).collect()
 }
 
-/// Finds a player by their unique ID.
+/// Finds a player by their UUID (surrogate key, admin route).
 ///
 /// # Arguments
 /// * `players` - Slice of all players in the collection
-/// * `id` - Unique identifier of the player to find
+/// * `id` - UUID of the player to find
 ///
 /// # Returns
-/// * `Some(PlayerResponse)` if a player with the given ID exists
-/// * `None` if no player has the specified ID
-pub fn get_by_id(players: &[Player], id: u32) -> Option<PlayerResponse> {
+/// * `Some(PlayerResponse)` if a player with the given UUID exists
+/// * `None` if no player has the specified UUID
+pub fn get_by_id(players: &[Player], id: &str) -> Option<PlayerResponse> {
     players
         .iter()
         .find(|p| p.id == id)
@@ -75,17 +74,17 @@ pub fn get_by_squad_number(players: &[Player], squad_number: u32) -> Option<Play
         .map(PlayerResponse::from)
 }
 
-/// Creates a new player with automatic ID assignment and validation.
+/// Creates a new player with an auto-generated UUID and validation.
 ///
-/// Validates that the squad number is not already in use, generates a new unique ID
-/// (max current ID + 1), and adds the player to the collection.
+/// Validates that the squad number is not already in use, generates a new UUID v4,
+/// and adds the player to the collection.
 ///
 /// # Arguments
 /// * `players` - Mutable reference to the player collection
 /// * `request` - Player data from the API request (without ID)
 ///
 /// # Returns
-/// * `Ok(PlayerResponse)` with the newly created player including assigned ID
+/// * `Ok(PlayerResponse)` with the newly created player including assigned UUID
 /// * `Err(CreateError::DuplicateSquadNumber)` if the squad number is already taken
 ///
 /// # Example
@@ -98,7 +97,6 @@ pub fn create(
     players: &mut Vec<Player>,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, CreateError> {
-    // Check for duplicate squad number
     if players
         .iter()
         .any(|p| p.squad_number == request.squad_number)
@@ -106,10 +104,7 @@ pub fn create(
         return Err(CreateError::DuplicateSquadNumber);
     }
 
-    // Generate new ID (max + 1)
-    let new_id = players.iter().map(|p| p.id).max().unwrap_or(0) + 1;
-
-    // Create and add new player
+    let new_id = Uuid::new_v4().to_string();
     let new_player = request.into_player(new_id);
     let response = PlayerResponse::from(&new_player);
     players.push(new_player);
@@ -117,64 +112,54 @@ pub fn create(
     Ok(response)
 }
 
-/// Updates an existing player's information with validation.
+/// Updates an existing player's information by squad number.
 ///
-/// Validates that the player exists and that the new squad number (if changed)
-/// is not already assigned to another player. Preserves the player's original ID.
+/// Looks up the player by their squad number (natural key). The squad number
+/// and UUID are immutable — they are preserved from the existing record
+/// regardless of what the request body contains.
 ///
 /// # Arguments
 /// * `players` - Mutable reference to the player collection
-/// * `id` - ID of the player to update
+/// * `squad_number` - Squad number (natural key) of the player to update
 /// * `request` - New player data from the API request
 ///
 /// # Returns
 /// * `Ok(PlayerResponse)` with the updated player data
-/// * `Err(UpdateError::NotFound)` if no player with the given ID exists
-/// * `Err(UpdateError::DuplicateSquadNumber)` if the new squad number is taken by another player
-///
-/// # Note
-/// A player can keep their current squad number without triggering a duplicate error.
+/// * `Err(UpdateError::NotFound)` if no player with the given squad number exists
 pub fn update(
     players: &mut [Player],
-    id: u32,
+    squad_number: u32,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, UpdateError> {
-    // Find the player index
     let player_index = players
         .iter()
-        .position(|p| p.id == id)
+        .position(|p| p.squad_number == squad_number)
         .ok_or(UpdateError::NotFound)?;
 
-    // Check for duplicate squad number (excluding current player)
-    if players
-        .iter()
-        .enumerate()
-        .any(|(idx, p)| idx != player_index && p.squad_number == request.squad_number)
-    {
-        return Err(UpdateError::DuplicateSquadNumber);
-    }
+    // Preserve the existing UUID and squad number — both are immutable
+    let existing_id = players[player_index].id.clone();
+    let mut updated_player = request.into_player(existing_id);
+    updated_player.squad_number = squad_number;
 
-    // Update player
-    let updated_player = request.into_player(id);
     let response = PlayerResponse::from(&updated_player);
     players[player_index] = updated_player;
 
     Ok(response)
 }
 
-/// Deletes a player from the collection by their ID.
+/// Deletes a player from the collection by their squad number (natural key).
 ///
-/// Uses `retain` to remove the player matching the given ID.
+/// Uses `retain` to remove the player matching the given squad number.
 ///
 /// # Arguments
 /// * `players` - Mutable reference to the player collection
-/// * `id` - ID of the player to delete
+/// * `squad_number` - Squad number of the player to delete
 ///
 /// # Returns
 /// * `true` if a player was found and deleted
-/// * `false` if no player with the given ID existed
-pub fn delete(players: &mut Vec<Player>, id: u32) -> bool {
+/// * `false` if no player with the given squad number existed
+pub fn delete(players: &mut Vec<Player>, squad_number: u32) -> bool {
     let initial_len = players.len();
-    players.retain(|p| p.id != id);
+    players.retain(|p| p.squad_number != squad_number);
     players.len() < initial_len
 }

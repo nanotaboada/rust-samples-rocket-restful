@@ -40,7 +40,7 @@ pub type PlayerCollection = Mutex<Vec<Player>>;
 pub fn initialize_players() -> Vec<Player> {
     vec![
         Player {
-            id: 1,
+            id: "f28c863b-48fd-4f41-834f-e49ee16d048a".to_string(),
             first_name: "Damián".to_string(),
             middle_name: "Emiliano".to_string(),
             last_name: "Martínez".to_string(),
@@ -53,7 +53,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 2,
+            id: "45765a8a-78df-45ab-8d91-9d1a49d38d7a".to_string(),
             first_name: "Nahuel".to_string(),
             middle_name: "".to_string(),
             last_name: "Molina".to_string(),
@@ -66,7 +66,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 3,
+            id: "d3ab3b82-90c1-463f-ba71-78edf4b6cdce".to_string(),
             first_name: "Cristian".to_string(),
             middle_name: "Gabriel".to_string(),
             last_name: "Romero".to_string(),
@@ -79,7 +79,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 4,
+            id: "cee9bb3e-3737-4d12-9f27-f3941be01642".to_string(),
             first_name: "Nicolás".to_string(),
             middle_name: "Hernán Gonzalo".to_string(),
             last_name: "Otamendi".to_string(),
@@ -92,7 +92,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 5,
+            id: "a98b2337-5f2e-4f93-b30f-0969b7ccde47".to_string(),
             first_name: "Nicolás".to_string(),
             middle_name: "Alejandro".to_string(),
             last_name: "Tagliafico".to_string(),
@@ -105,7 +105,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 6,
+            id: "1e9bcf7c-7cf0-4535-ab4f-2bec5c6777e3".to_string(),
             first_name: "Ángel".to_string(),
             middle_name: "Fabián".to_string(),
             last_name: "Di María".to_string(),
@@ -118,7 +118,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 7,
+            id: "36980293-8dea-4f43-95ba-8067fa71591c".to_string(),
             first_name: "Rodrigo".to_string(),
             middle_name: "Javier".to_string(),
             last_name: "de Paul".to_string(),
@@ -131,7 +131,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 8,
+            id: "fcf653d9-c74d-4757-adb2-dcf46cbc2825".to_string(),
             first_name: "Enzo".to_string(),
             middle_name: "Jeremías".to_string(),
             last_name: "Fernández".to_string(),
@@ -144,7 +144,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 9,
+            id: "5cd7d768-dde8-4037-90a6-50d541a98577".to_string(),
             first_name: "Alexis".to_string(),
             middle_name: "".to_string(),
             last_name: "Mac Allister".to_string(),
@@ -157,7 +157,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 10,
+            id: "f10f398d-b2ff-40aa-acac-51f58d129bc7".to_string(),
             first_name: "Lionel".to_string(),
             middle_name: "Andrés".to_string(),
             last_name: "Messi".to_string(),
@@ -170,7 +170,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 11,
+            id: "80d61421-93a1-466c-82dc-81152b677c22".to_string(),
             first_name: "Julián".to_string(),
             middle_name: "".to_string(),
             last_name: "Álvarez".to_string(),
@@ -183,7 +183,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: true,
         },
         Player {
-            id: 12,
+            id: "2c3ec9a0-a1b3-4e34-82e0-7413be4bc77f".to_string(),
             first_name: "Franco".to_string(),
             middle_name: "Daniel".to_string(),
             last_name: "Armani".to_string(),
@@ -196,7 +196,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 13,
+            id: "3f5dcba2-4b86-4704-a020-2f2c2a8875f8".to_string(),
             first_name: "Gerónimo".to_string(),
             middle_name: "".to_string(),
             last_name: "Rulli".to_string(),
@@ -209,7 +209,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 14,
+            id: "378e11b8-76b2-4886-b2c9-f686edaa7d5e".to_string(),
             first_name: "Juan".to_string(),
             middle_name: "Marcos".to_string(),
             last_name: "Foyth".to_string(),
@@ -222,7 +222,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 15,
+            id: "f4daee32-549a-43cb-9214-20034bb00a7d".to_string(),
             first_name: "Gonzalo".to_string(),
             middle_name: "Ariel".to_string(),
             last_name: "Montiel".to_string(),
@@ -235,7 +235,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 16,
+            id: "ac5b20a4-96e5-45e2-9089-bcc5a37f93c0".to_string(),
             first_name: "Germán".to_string(),
             middle_name: "Alejo".to_string(),
             last_name: "Pezzella".to_string(),
@@ -248,7 +248,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 17,
+            id: "409d5d12-e993-4a40-9e73-c054a06565dc".to_string(),
             first_name: "Marcos".to_string(),
             middle_name: "Javier".to_string(),
             last_name: "Acuña".to_string(),
@@ -261,7 +261,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 18,
+            id: "8f0b631f-f95d-40cc-8a59-61bbd82f6de5".to_string(),
             first_name: "Lisandro".to_string(),
             middle_name: "".to_string(),
             last_name: "Martínez".to_string(),
@@ -274,7 +274,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 19,
+            id: "d7a342b5-8e96-415b-9c97-c2f80dbc33b6".to_string(),
             first_name: "Leandro".to_string(),
             middle_name: "Daniel".to_string(),
             last_name: "Paredes".to_string(),
@@ -287,7 +287,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 20,
+            id: "e395e764-0140-4c41-a9bb-ced7652a64ae".to_string(),
             first_name: "Exequiel".to_string(),
             middle_name: "Alejandro".to_string(),
             last_name: "Palacios".to_string(),
@@ -300,7 +300,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 21,
+            id: "170b46d5-2a34-408d-8595-7aea1a047c0c".to_string(),
             first_name: "Alejandro".to_string(),
             middle_name: "Darío".to_string(),
             last_name: "Gómez".to_string(),
@@ -313,7 +313,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 22,
+            id: "3fe5ca9c-5887-4432-8f8b-b60a1a93b626".to_string(),
             first_name: "Guido".to_string(),
             middle_name: "".to_string(),
             last_name: "Rodríguez".to_string(),
@@ -326,7 +326,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 23,
+            id: "79439ba4-5f97-441f-8612-f3957058f99c".to_string(),
             first_name: "Ángel".to_string(),
             middle_name: "Martín".to_string(),
             last_name: "Correa".to_string(),
@@ -339,7 +339,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 24,
+            id: "a9ebeb5f-3ca4-42f6-9a80-c723556e00fa".to_string(),
             first_name: "Thiago".to_string(),
             middle_name: "Ezequiel".to_string(),
             last_name: "Almada".to_string(),
@@ -352,7 +352,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 25,
+            id: "dcc142ca-2e76-49b6-b9d1-d7ae7d7110f2".to_string(),
             first_name: "Paulo".to_string(),
             middle_name: "Exequiel".to_string(),
             last_name: "Dybala".to_string(),
@@ -365,7 +365,7 @@ pub fn initialize_players() -> Vec<Player> {
             starting11: false,
         },
         Player {
-            id: 26,
+            id: "87a135a2-3634-49b9-b4b0-21a8b80f2b9d".to_string(),
             first_name: "Lautaro".to_string(),
             middle_name: "Javier".to_string(),
             last_name: "Martínez".to_string(),

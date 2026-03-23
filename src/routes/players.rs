@@ -2,6 +2,13 @@
 //!
 //! Handles HTTP requests for player management operations, delegating business
 //! logic to the player service layer and converting results to HTTP responses.
+//!
+//! ## Key design
+//!
+//! | Concern         | Key used        | Notes                              |
+//! |-----------------|-----------------|-------------------------------------|
+//! | Surrogate key   | UUID (`id`)     | Admin route: `GET /players/{uuid}` |
+//! | Natural key     | `squad_number`  | All mutation routes use this       |
 
 use crate::models::player::{PlayerRequest, PlayerResponse};
 use crate::services::player_service::{self, CreateError, UpdateError};
@@ -15,7 +22,7 @@ use rocket::{State, delete, get, http::Status, post, put, routes, serde::json::J
 ///
 /// # Example Response
 /// ```json
-/// [{"id": 1, "firstName": "Lionel", "squadNumber": 10, ...}, ...]
+/// [{"id": "f10f398d-b2ff-40aa-acac-51f58d129bc7", "firstName": "Lionel", "squadNumber": 10, ...}, ...]
 /// ```
 #[get("/players")]
 fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerResponse>>, Status> {
@@ -24,24 +31,24 @@ fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerR
     Ok(Json(response))
 }
 
-/// GET /players/{id} - Retrieves a specific player by ID.
+/// GET /players/{id} - Retrieves a specific player by UUID (admin route).
 ///
 /// # Path Parameters
-/// * `id` - Unique player identifier
+/// * `id` - UUID surrogate key of the player
 ///
 /// # Returns
 /// * `200 OK` - JSON object with player data
-/// * `404 Not Found` - If player ID doesn't exist
+/// * `404 Not Found` - If no player has that UUID
 ///
 /// # Example
-/// `GET /players/10` returns Messi's data (if ID 10 exists)
+/// `GET /players/f10f398d-b2ff-40aa-acac-51f58d129bc7` returns Messi's data
 #[get("/players/<id>")]
 fn get_player_by_id(
-    id: u32,
+    id: String,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
     let players = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_by_id(&players, id)
+    player_service::get_by_id(&players, &id)
         .map(Json)
         .ok_or(Status::NotFound)
 }
@@ -68,18 +75,18 @@ fn get_player_by_squad_number(
         .ok_or(Status::NotFound)
 }
 
-/// POST /players - Creates a new player with auto-generated ID.
+/// POST /players - Creates a new player with an auto-generated UUID.
 ///
 /// # Request Body
 /// JSON object with player data (ID will be assigned automatically)
 ///
 /// # Returns
-/// * `201 Created` - JSON object with the created player including assigned ID
+/// * `201 Created` - JSON object with the created player including assigned UUID
 /// * `409 Conflict` - If squad number is already taken
 ///
 /// # Validation
 /// * Squad numbers must be unique across all players
-/// * ID is auto-generated as max(existing IDs) + 1
+/// * UUID is auto-generated via `uuid::Uuid::new_v4()`
 ///
 /// # Example Request
 /// ```json
@@ -98,56 +105,56 @@ fn create_player(
     }
 }
 
-/// PUT /players/{id} - Updates an existing player's information.
+/// PUT /players/squadnumber/{squad_number} - Updates an existing player's information.
+///
+/// Uses `squad_number` as the natural key to look up the player. The squad
+/// number and UUID are immutable — they are preserved from the existing record
+/// regardless of what the request body contains.
 ///
 /// # Path Parameters
-/// * `id` - ID of the player to update
+/// * `squad_number` - Squad number (natural key) of the player to update
 ///
 /// # Request Body
-/// JSON object with complete player data (ID in URL is preserved)
+/// JSON object with complete player data
 ///
 /// # Returns
 /// * `200 OK` - JSON object with updated player data
-/// * `404 Not Found` - If player ID doesn't exist
-/// * `409 Conflict` - If new squad number is already taken by another player
-///
-/// # Validation
-/// * Player can keep their current squad number without conflict
-/// * Changing to another player's squad number triggers 409 Conflict
+/// * `404 Not Found` - If no player has that squad number
 ///
 /// # Example
-/// `PUT /players/1` with JSON body updates player with ID 1
-#[put("/players/<id>", data = "<player_request>")]
+/// `PUT /players/squadnumber/10` with JSON body updates the player wearing jersey #10
+#[put("/players/squadnumber/<squad_number>", data = "<player_request>")]
 fn update_player(
-    id: u32,
+    squad_number: u32,
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
     let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::update(&mut players, id, player_request.into_inner()) {
+    match player_service::update(&mut players, squad_number, player_request.into_inner()) {
         Ok(response) => Ok(Json(response)),
         Err(UpdateError::NotFound) => Err(Status::NotFound),
-        Err(UpdateError::DuplicateSquadNumber) => Err(Status::Conflict),
     }
 }
 
-/// DELETE /players/{id} - Removes a player from the collection.
+/// DELETE /players/squadnumber/{squad_number} - Removes a player from the collection.
+///
+/// Uses `squad_number` as the natural key to look up the player.
 ///
 /// # Path Parameters
-/// * `id` - ID of the player to delete
+/// * `squad_number` - Squad number (natural key) of the player to delete
 ///
 /// # Returns
 /// * `204 No Content` - Player successfully deleted (no response body)
-/// * `404 Not Found` - If player ID doesn't exist
+/// * `404 Not Found` - If no player has that squad number
 ///
 /// # Note
 /// Deletion is permanent and cannot be undone (in-memory storage).
-#[delete("/players/<id>")]
-fn delete_player(id: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
+#[delete("/players/squadnumber/<squad_number>")]
+fn delete_player(squad_number: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
     let mut players = players.lock().map_err(|_| Status::InternalServerError)?;
 
-    if player_service::delete(&mut players, id) {
+    if player_service::delete(&mut players, squad_number) {
         Ok(Status::NoContent)
     } else {
         Err(Status::NotFound)
