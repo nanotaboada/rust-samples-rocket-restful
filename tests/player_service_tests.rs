@@ -63,6 +63,9 @@ fn test_request_get_players_all_response_body_players() {
     }
 }
 
+// Seed UUID for Lionel Messi — matches the value in player_collection.rs
+const SEED_MESSI_ID: &str = "f10f398d-b2ff-40aa-acac-51f58d129bc7";
+
 // GET /players/{uuid} ---------------------------------------------------------
 
 // GET /players/{uuid} with existing UUID returns 200 OK
@@ -70,14 +73,12 @@ fn test_request_get_players_all_response_body_players() {
 fn test_request_get_player_id_existing_response_body_player() {
     // Arrange
     let players = initialize_players();
-    // Get Messi's UUID via squad number (natural key)
-    let messi = player_service::get_by_squad_number(&players, 10).unwrap();
     // Act
-    let result = player_service::get_by_id(&players, &messi.id);
+    let result = player_service::get_by_id(&players, SEED_MESSI_ID);
     // Assert
     assert!(result.is_some());
     let player = result.unwrap();
-    assert_eq!(player.id, messi.id);
+    assert_eq!(player.id, SEED_MESSI_ID);
     assert_eq!(player.first_name, "Lionel");
     assert_eq!(player.middle_name, "Andrés");
     assert_eq!(player.last_name, "Messi");
