@@ -1,6 +1,10 @@
 # 🧪 RESTful API with Rust and Rocket
 
 [![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-white.svg)](https://opensource.org/licenses/MIT)
+![Dependabot](https://img.shields.io/badge/Dependabot-contributing-025E8C?logo=dependabot&logoColor=white&labelColor=181818)
+![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-contributing-8662C5?logo=githubcopilot&logoColor=white&labelColor=181818)
+![Claude](https://img.shields.io/badge/Claude-Sonnet_4.6-D97757?logo=claude&logoColor=white&labelColor=181818)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nanotaboada/rust-samples-rocket-restful?utm_source=oss&utm_medium=github&utm_campaign=nanotaboada%2Frust-samples-rocket-restful&labelColor=181818&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/) and [Rocket](https://rocket.rs/). Manage football player data with thread-safe in-memory storage using Mutex.
 
@@ -34,6 +38,7 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 | **Language** | [Rust 2024 Edition](https://www.rust-lang.org/) |
 | **Web Framework** | [Rocket 0.5.1](https://rocket.rs/) |
 | **Serialization** | [Serde](https://serde.rs/) |
+| **Unique IDs** | [uuid](https://github.com/uuid-rs/uuid) |
 | **Storage** | In-memory (`Mutex<Vec<Player>>`) |
 
 ## Project Structure
@@ -72,34 +77,84 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 
 ## Architecture
 
-**Modular Layered Architecture:**
+Layered architecture with Rocket's managed state for thread-safe dependency sharing.
 
-```text
-HTTP Request → Routes → Services → State (Mutex) → In-Memory Storage → Response
+```mermaid
+%%{init: {
+  "theme": "default",
+  "themeVariables": {
+    "fontFamily": "Fira Code, Consolas, monospace",
+    "textColor": "#555",
+    "lineColor": "#555",
+    "lineWidth": 2,
+    "clusterBkg": "#f5f5f5",
+    "clusterBorder": "#999"
+  }
+}}%%
+
+graph RL
+
+    tests[tests]
+
+    main[main]
+    Rocket[Rocket]
+
+    routes[routes]
+
+    services[services]
+
+    models[models]
+    state[state]
+    Serde[Serde]
+
+    %% Dependencies
+
+    routes --> main
+    Rocket --> main
+
+    Rocket --> routes
+    services --> routes
+    state --> routes
+
+    Serde --> models
+
+    %% Soft dependencies
+
+    models -.-> routes
+    models -.-> services
+    models -.-> state
+
+    main -.-> tests
+
+    %% Styling
+    classDef core fill:#b3d9ff,stroke:#6db1ff,stroke-width:2px,color:#555,font-family:monospace;
+    classDef deps fill:#ffcccc,stroke:#ff8f8f,stroke-width:2px,color:#555,font-family:monospace;
+    classDef test fill:#ccffcc,stroke:#53c45e,stroke-width:2px,color:#555,font-family:monospace;
+
+    class main,routes,services,state,models core
+    class Rocket,Serde deps
+    class tests test
 ```
 
-**Dependency Flow:**
+*Simplified, conceptual view — not all components or dependencies are shown.*
 
-- Routes → Services → State (unidirectional)
-- Services contain pure business logic, framework-agnostic
-- Routes handle HTTP concerns (status codes, JSON serialization)
-- State management is isolated from business logic
+### Arrow Semantics
 
-**Data Flow:**
+Arrows follow the wiring direction: `A --> B` means A is provided to B. Solid arrows (`-->`) represent active dependencies — modules explicitly wired in `main` and invoked at runtime. Dotted arrows (`-.->`) represent structural dependencies — the consumer references types without invoking runtime behavior.
 
-- HTTP requests are received by Rocket route handlers in `routes/`
-- Route handlers acquire locks and delegate to pure functions in `services/`
-- Services perform business logic (validation, CRUD) on borrowed data
-- Services return Results that routes convert to HTTP responses
-- Thread-safe state access via `Mutex<Vec<Player>>`
+### Composition Root Pattern
 
-**Type Safety:**
+`main` is the composition root: it builds the Rocket instance, loads the pre-seeded player data from JSON, registers `PlayerCollection` as managed state via `.manage()`, and mounts all route handlers.
 
-- **Player** - Internal storage entity (in `models/player.rs`)
-- **PlayerRequest** - API input for `POST`/`PUT` (no ID, system-generated)
-- **PlayerResponse** - API output (includes ID)
+### Layered Architecture
 
-This separation provides type safety, testability, and prevents accidental exposure of internal implementation details.
+Four layers: Initialization (`main`), HTTP (`routes`), Business (`services`), and Data (`state`).
+
+`models` is a cross-cutting type concern — data structures for the player domain (`Player`, `PlayerRequest`, `PlayerResponse`) consumed across multiple layers, with no business logic of its own.
+
+### Color Coding
+
+Blue = core application modules, red = third-party crates.
 
 ## API Reference
 
@@ -109,11 +164,11 @@ This separation provides type safety, testability, and prevents accidental expos
 | ------ | ---- | ----------- |
 | `GET` | `/health` | Health check |
 | `GET` | `/players` | List all players |
-| `GET` | `/players/:id` | Get player by ID |
+| `GET` | `/players/:id` | Get player by UUID (surrogate key) |
 | `GET` | `/players/squadnumber/:squadnumber` | Get player by squad number |
 | `POST` | `/players` | Create new player |
-| `PUT` | `/players/:id` | Update player |
-| `DELETE` | `/players/:id` | Remove player |
+| `PUT` | `/players/squadnumber/:squadnumber` | Update player |
+| `DELETE` | `/players/squadnumber/:squadnumber` | Remove player |
 
 ### Response Codes
 
@@ -123,7 +178,7 @@ This separation provides type safety, testability, and prevents accidental expos
 | `201 Created` | Successful POST |
 | `204 No Content` | Successful DELETE |
 | `404 Not Found` | Player not found |
-| `409 Conflict` | Duplicate squad number |
+| `409 Conflict` | Duplicate squad number on `POST` |
 
 ## Prerequisites
 
@@ -188,8 +243,8 @@ curl -X POST http://localhost:9000/players \
     "starting11": false
   }'
 
-# Update a player (requires full object)
-curl -X PUT http://localhost:9000/players/1 \
+# Update a player (squad number is immutable — used as lookup key)
+curl -X PUT http://localhost:9000/players/squadnumber/23 \
   -H "Content-Type: application/json" \
   -d '{
     "firstName": "Emiliano",
@@ -205,7 +260,7 @@ curl -X PUT http://localhost:9000/players/1 \
   }'
 
 # Delete a player
-curl -X DELETE http://localhost:9000/players/21
+curl -X DELETE http://localhost:9000/players/squadnumber/17
 ```
 
 ## Testing
@@ -222,16 +277,6 @@ cargo test -- --nocapture
 # Run tests with detailed output
 cargo test -- --show-output
 ```
-
-## CI/CD
-
-The project uses GitHub Actions with sequential job execution:
-
-### Pipeline
-
-Format → Lint → Build → Test
-
-Each job depends on the previous one succeeding. This provides fail-fast feedback and saves CI resources.
 
 ## Command Summary
 
