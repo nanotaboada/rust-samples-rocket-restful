@@ -6,7 +6,7 @@
 
     // Infrastructure & Workflow
     "ms-azuretools.vscode-containers",   // Container Tools - Docker and container management
-    "github.copilot-chat",               // GitHub Copilot Chat - AI coding assistant
+    "anthropic.claude-code",             // Claude Code - AI-powered coding assistant
     "github.vscode-pull-request-github", // GitHub Pull Requests and Issues - PR management
     "github.vscode-github-actions",      // GitHub Actions - CI/CD workflow support
     "redhat.vscode-yaml",                // YAML - Language support for YAML files
@@ -20,6 +20,6 @@
   "unwantedRecommendations": [
     "ms-azuretools.vscode-docker",       // Docker (legacy) - Use vscode-containers instead
     "docker.docker",                     // Docker DX - Use ms-azuretools.vscode-containers
-    "github.copilot"                     // Copilot (base) - Unified into copilot-chat
+    "github.copilot"                     // GitHub Copilot - legacy base extension
   ]
 }
