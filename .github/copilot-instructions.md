@@ -109,5 +109,5 @@ Example: `feat(api): add player stats endpoint (#42)`
 ```text
 feat(scope): description (#issue)
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
