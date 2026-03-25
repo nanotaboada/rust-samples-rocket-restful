@@ -1,17 +1,17 @@
-# GitHub Copilot Instructions
+# Custom Instructions
 
 ## Overview
 
-REST API for managing football players built with Rust and Rocket. Implements CRUD operations with in-memory thread-safe storage (`Mutex<Vec<Player>>`), a three-layer architecture, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
+REST API for managing football players built with Rust and Rocket. Implements CRUD operations with in-memory thread-safe storage (`Mutex<Vec<Player>>`), a layered architecture, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
 
 ## Tech Stack
 
 - **Language**: Rust 2024 Edition (enforced via `rust-toolchain.toml`)
 - **Framework**: Rocket 0.5 (async)
 - **Serialization**: Serde (JSON)
+- **Unique IDs**: uuid (v4 + serde features)
 - **Storage**: In-memory `Mutex<Vec<Player>>` (SQLite planned — Issue #23)
 - **Testing**: Rust built-in test framework
-- **Containerization**: Docker
 
 ## Structure
 
@@ -22,12 +22,20 @@ src/
 ├── services/           — pure business logic; no HTTP knowledge; returns Result types      [business layer]
 └── state/              — thread-safe data access via Mutex<Vec<Player>>                    [data layer]
 tests/                  — integration tests (Arrange/Act/Assert pattern)
-players.json            — seed data (26 players)
 Rocket.toml             — server configuration (address, port)
 rust-toolchain.toml     — Rust 2024 edition lock
 ```
 
 **Layer rule**: `Routes → Services → State`. Routes must not contain business logic. Services must not have HTTP knowledge. State handles all data access.
+
+## Key Design: Surrogate vs. Natural Key
+
+| Concern | Key | Route |
+| ------- | --- | ----- |
+| Surrogate key | UUID (`id`) | `GET /players/{uuid}` — admin lookup only |
+| Natural key | `squad_number` | All mutation routes: `PUT` and `DELETE /players/squadnumber/{squad_number}` |
+
+Both `id` (UUID) and `squad_number` are **immutable once set**. On `PUT`, the UUID and squad number from the existing record are always preserved — the request body values for these fields are ignored.
 
 ## Coding Guidelines
 
@@ -37,6 +45,7 @@ rust-toolchain.toml     — Rust 2024 edition lock
 - **Errors**: `Result<T, CustomError>` with domain-specific error types; never `unwrap()` or `expect()` in production paths; always propagate with `?`
 - **Safety**: no blocking operations in async handlers; no global mutable state without `Mutex`
 - **Tests**: integration tests in `tests/`; Arrange/Act/Assert with section comments; fixture functions for test data (not stubs); naming `test_request_{method}_{endpoint}_{condition}_response_{verification}`; verify complete response objects
+- **Test fixtures**: use `initialize_players()` for the full 26-player seed; use `players_except_player_for_creation()` (excludes squad 16) when testing POST; use `player_request_for_creation()` and `player_request_for_update()` for request bodies; use `SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode the UUID string inline
 - **Avoid**: `unwrap()`/`expect()` in production, unnecessary `.clone()`, blocking in async handlers, missing `?` propagation, inline comments between AAA test sections, `&Vec<T>` when a slice suffices
 
 ## Commands
@@ -49,7 +58,6 @@ cargo run                               # starts on port 9000
 cargo test
 cargo test test_request_get_players     # run specific test
 cargo test -- --nocapture               # with output
-docker compose up --build
 ```
 
 ### Pre-commit Checks
@@ -82,16 +90,15 @@ Example: `feat(api): add player stats endpoint (#42)`
 - Architecture (adding/removing layers)
 - Dependencies (`Cargo.toml`)
 - CI/CD configuration (`.github/workflows/`)
-- Docker setup
 - `Rocket.toml` server configuration
 - `rust-toolchain.toml`
 
 ### Never modify
 
-- `players.json` seed data (without discussion)
+- Seed data in `src/state/player_collection.rs` (without discussion)
 - Port configuration (9000)
 - `rust-toolchain.toml` toolchain version
-- Production deployment configurations
+- The surrogate/natural key design (UUID for GET, squad number for PUT/DELETE)
 
 ### Key workflows
 
@@ -102,5 +109,5 @@ Example: `feat(api): add player stats endpoint (#42)`
 ```text
 feat(scope): description (#issue)
 
-Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
