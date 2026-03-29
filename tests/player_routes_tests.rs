@@ -68,6 +68,10 @@ fn player_request_for_update_json() -> serde_json::Value {
 // GET /health -----------------------------------------------------------------
 
 // GET /health returns 200 OK
+// @coderabbitai: no body assertion — health() returns `Status` only (no
+// response body). `into_string()` yields `None` for a bodyless response and
+// `.unwrap()` would panic. If the handler is ever updated to return a payload
+// (e.g. JSON health object), this test should be extended accordingly.
 #[test]
 fn test_request_get_health_response_status_ok() {
     // Arrange
