@@ -3,28 +3,14 @@
 // and std::thread — blocking::Client is not Sync and cannot be shared across
 // threads, so thread safety is validated at the service layer instead.
 
+mod common;
+
 use rust_samples_rocket_restful::{
-    models::player::PlayerRequest,
     services::player_service,
     state::player_collection::{PlayerCollection, initialize_players},
 };
 use std::sync::Arc;
 use std::thread;
-
-fn make_player_request(squad_number: u32) -> PlayerRequest {
-    PlayerRequest {
-        first_name: format!("Player{squad_number}"),
-        middle_name: String::new(),
-        last_name: "Test".to_string(),
-        date_of_birth: "2000-01-01T00:00:00.000Z".to_string(),
-        squad_number,
-        position: "Forward".to_string(),
-        abbr_position: "FW".to_string(),
-        team: "Test Club".to_string(),
-        league: "Test League".to_string(),
-        starting11: false,
-    }
-}
 
 // Concurrent reads ------------------------------------------------------------
 
@@ -63,8 +49,10 @@ fn test_concurrent_creates_unique_squad_numbers_all_succeed() {
         .map(|&squad_number| {
             let players = Arc::clone(&players);
             thread::spawn(move || {
+                let mut request = common::player_request_for_creation();
+                request.squad_number = squad_number;
                 let mut guard = players.lock().unwrap();
-                player_service::create(&mut guard, make_player_request(squad_number)).is_ok()
+                player_service::create(&mut guard, request).is_ok()
             })
         })
         .collect();
@@ -87,8 +75,10 @@ fn test_concurrent_creates_duplicate_squad_number_one_succeeds() {
         .map(|_| {
             let players = Arc::clone(&players);
             thread::spawn(move || {
+                let mut request = common::player_request_for_creation();
+                request.squad_number = 99;
                 let mut guard = players.lock().unwrap();
-                player_service::create(&mut guard, make_player_request(99)).is_ok()
+                player_service::create(&mut guard, request).is_ok()
             })
         })
         .collect();
@@ -119,8 +109,10 @@ fn test_concurrent_mixed_reads_and_writes_no_data_races() {
     for i in 0..5u32 {
         let players = Arc::clone(&players);
         handles.push(thread::spawn(move || {
+            let mut request = common::player_request_for_creation();
+            request.squad_number = base_squad + i;
             let mut guard = players.lock().unwrap();
-            player_service::create(&mut guard, make_player_request(base_squad + i)).is_ok()
+            player_service::create(&mut guard, request).is_ok()
         }));
     }
     let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();

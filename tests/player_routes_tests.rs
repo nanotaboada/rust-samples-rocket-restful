@@ -1,6 +1,8 @@
 // Integration tests for player route handlers
 // Exercises the full HTTP request/response cycle using Rocket's blocking test
-// client. Each test gets a fresh Rocket instance with the full 26-player seed.
+// client. Each test gets a fresh Rocket instance with a dedicated seed.
+
+mod common;
 
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
@@ -9,9 +11,7 @@ use rust_samples_rocket_restful::{
     state::player_collection::{PlayerCollection, initialize_players},
 };
 
-// Seed UUID for Lionel Messi — matches the value in player_collection.rs
-const SEED_MESSI_ID: &str = "f10f398d-b2ff-40aa-acac-51f58d129bc7";
-
+// Full 26-player seed — used by all tests except POST creation
 fn setup_client() -> Client {
     let players = PlayerCollection::new(initialize_players());
     let rocket = rocket::build()
@@ -21,14 +21,25 @@ fn setup_client() -> Client {
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
-// Test Fixture: squad 99 — not present in the 26-player seed, safe for POST tests
+// 25-player seed (squad 16 excluded) — used by POST creation tests so the
+// canonical Thiago Almada fixture (squad 16) does not conflict
+fn setup_client_for_post() -> Client {
+    let players = PlayerCollection::new(common::players_except_player_for_creation());
+    let rocket = rocket::build()
+        .manage(players)
+        .mount("/", routes::health::routes())
+        .mount("/", routes::players::routes());
+    Client::tracked(rocket).expect("valid rocket instance")
+}
+
+// JSON mirror of common::player_request_for_creation() — Thiago Almada, squad 16
 fn player_request_for_creation_json() -> serde_json::Value {
     serde_json::json!({
         "firstName": "Thiago",
         "middleName": "Ezequiel",
         "lastName": "Almada",
         "dateOfBirth": "2001-04-26T00:00:00.000Z",
-        "squadNumber": 99,
+        "squadNumber": 16,
         "position": "Attacking Midfield",
         "abbrPosition": "AM",
         "team": "Atlanta United FC",
@@ -37,14 +48,15 @@ fn player_request_for_creation_json() -> serde_json::Value {
     })
 }
 
-// Test Fixture: Emiliano Martínez — used for PUT tests targeting squad 23
+// PUT fixture for Emiliano Martínez targeting squad 23.
+// squadNumber is deliberately set to 99 (≠ 23) to prove the route param wins.
 fn player_request_for_update_json() -> serde_json::Value {
     serde_json::json!({
         "firstName": "Emiliano",
         "middleName": "",
         "lastName": "Martínez",
         "dateOfBirth": "1992-09-02T00:00:00.000Z",
-        "squadNumber": 23,
+        "squadNumber": 99,
         "position": "Goalkeeper",
         "abbrPosition": "GK",
         "team": "Aston Villa FC",
@@ -112,11 +124,13 @@ fn test_request_get_player_by_id_existing_response_status_ok() {
     // Arrange
     let client = setup_client();
     // Act
-    let response = client.get(format!("/players/{SEED_MESSI_ID}")).dispatch();
+    let response = client
+        .get(format!("/players/{}", common::SEED_MESSI_ID))
+        .dispatch();
     // Assert
     assert_eq!(response.status(), Status::Ok);
     let body: serde_json::Value = serde_json::from_str(&response.into_string().unwrap()).unwrap();
-    assert_eq!(body["id"], SEED_MESSI_ID);
+    assert_eq!(body["id"], common::SEED_MESSI_ID);
     assert_eq!(body["firstName"], "Lionel");
     assert_eq!(body["middleName"], "Andrés");
     assert_eq!(body["lastName"], "Messi");
@@ -182,8 +196,8 @@ fn test_request_get_player_by_squadnumber_nonexistent_response_status_not_found(
 // POST /players with valid body returns 201 Created with full player response
 #[test]
 fn test_request_post_player_body_valid_response_status_created() {
-    // Arrange
-    let client = setup_client();
+    // Arrange — 25-player seed (no squad 16), so Thiago Almada can be created
+    let client = setup_client_for_post();
     let body = player_request_for_creation_json();
     // Act
     let response = client
@@ -201,7 +215,7 @@ fn test_request_post_player_body_valid_response_status_created() {
     assert_eq!(response_body["middleName"], "Ezequiel");
     assert_eq!(response_body["lastName"], "Almada");
     assert_eq!(response_body["dateOfBirth"], "2001-04-26T00:00:00.000Z");
-    assert_eq!(response_body["squadNumber"], 99);
+    assert_eq!(response_body["squadNumber"], 16);
     assert_eq!(response_body["position"], "Attacking Midfield");
     assert_eq!(response_body["abbrPosition"], "AM");
     assert_eq!(response_body["team"], "Atlanta United FC");
@@ -212,20 +226,9 @@ fn test_request_post_player_body_valid_response_status_created() {
 // POST /players with duplicate squad number returns 409 Conflict
 #[test]
 fn test_request_post_player_body_duplicate_response_status_conflict() {
-    // Arrange
+    // Arrange — full 26-player seed, squad 16 already present
     let client = setup_client();
-    let body = serde_json::json!({
-        "firstName": "Duplicate",
-        "middleName": "",
-        "lastName": "Player",
-        "dateOfBirth": "1990-01-01T00:00:00.000Z",
-        "squadNumber": 10, // Messi's number — already in the seed
-        "position": "Forward",
-        "abbrPosition": "FW",
-        "team": "Some Club",
-        "league": "Some League",
-        "starting11": false
-    });
+    let body = player_request_for_creation_json(); // squad 16 — conflicts with seed
     // Act
     let response = client
         .post("/players")
@@ -238,11 +241,17 @@ fn test_request_post_player_body_duplicate_response_status_conflict() {
 
 // PUT /players/squadnumber/{squad_number} -------------------------------------
 
-// PUT /players/squadnumber/{squad_number} with existing number returns 200 OK
+// PUT /players/squadnumber/{squad_number} returns 200 OK and preserves both
+// UUID and squad_number regardless of the values sent in the request body
 #[test]
 fn test_request_put_player_squadnumber_existing_response_status_ok() {
-    // Arrange
+    // Arrange — capture the original UUID of squad 23 before the update
     let client = setup_client();
+    let original = client.get("/players/squadnumber/23").dispatch();
+    let original_body: serde_json::Value =
+        serde_json::from_str(&original.into_string().unwrap()).unwrap();
+    let original_id = original_body["id"].as_str().unwrap().to_string();
+    // Body carries squadNumber 99 — must be ignored; route param (23) wins
     let body = player_request_for_update_json();
     // Act
     let response = client
@@ -254,8 +263,8 @@ fn test_request_put_player_squadnumber_existing_response_status_ok() {
     assert_eq!(response.status(), Status::Ok);
     let response_body: serde_json::Value =
         serde_json::from_str(&response.into_string().unwrap()).unwrap();
-    assert_eq!(response_body["squadNumber"], 23); // immutable — preserved from route
-    assert!(!response_body["id"].as_str().unwrap().is_empty()); // UUID preserved
+    assert_eq!(response_body["id"], original_id); // UUID preserved from record
+    assert_eq!(response_body["squadNumber"], 23); // natural key from route, not body
     assert_eq!(response_body["firstName"], "Emiliano");
     assert_eq!(response_body["middleName"], "");
     assert_eq!(response_body["lastName"], "Martínez");

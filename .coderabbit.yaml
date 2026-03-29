@@ -80,17 +80,26 @@ reviews:
         - Verify all modules (`models`, `routes`, `services`, `state`) are re-exported as `pub mod`
         - This file exists solely to expose modules to integration tests — keep it minimal
 
-    - path: "tests/**/*.rs"
+    - path: "tests/player_routes_tests.rs"
       instructions: |
-        - Integration tests only — no unit tests inside `src/`
+        - Integration tests only — import from the library crate (`rust_samples_rocket_restful::`)
         - Follow AAA pattern with `// Arrange`, `// Act`, `// Assert` section comments
         - Naming convention: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
           (e.g. `test_request_get_player_by_id_existing_response_status_ok`)
-        - Use `setup_client()` helper that builds a fresh Rocket instance per test via `initialize_players()`
-        - Use fixture functions for request bodies — no inline magic values for player data
-        - Use `SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode UUID strings inline
-        - Concurrency tests use `Arc<PlayerCollection>` + `std::thread` — not `Arc<Client>` (`blocking::Client` is not `Sync`)
-        - Verify complete response objects, not just status codes
+        - Use `setup_client()` (full 26-player seed) for all tests except POST creation
+        - Use `setup_client_for_post()` (25-player seed, squad 16 excluded) for POST creation tests
+        - Use `player_request_for_creation_json()` and `player_request_for_update_json()` fixtures — no ad-hoc JSON payloads
+        - Use `common::SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode UUID strings inline
+        - PUT tests must capture the original UUID via GET before calling PUT, then assert the response preserves it
+        - Verify complete response objects (all fields), not just status codes
+
+    - path: "tests/concurrency_tests.rs"
+      instructions: |
+        - Tests the `Mutex<Vec<Player>>` state layer directly — do NOT use `rocket::local::blocking::Client`
+        - `blocking::Client` is not `Sync` and cannot be shared across threads via `Arc`
+        - Use `Arc<PlayerCollection>` + `std::thread` for all concurrency scenarios
+        - Use `common::player_request_for_creation()` as the base fixture and override `squad_number` per thread
+        - Cover: concurrent reads, concurrent unique creates, concurrent duplicate creates, mixed reads/writes
 
   path_filters:
     - "!**/target/**"
