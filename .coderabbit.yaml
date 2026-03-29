@@ -1,17 +1,17 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# https://docs.coderabbit.ai/getting-started/configure-coderabbit
+
+# CodeRabbit Configuration
+# Optimized for Rust 2024 Edition / Rocket 0.5 RESTful API project
+
 language: en-US
-tone_instructions: ""
 early_access: true
-enable_free_tier: true
-inheritance: false
+
 reviews:
   profile: chill
   request_changes_workflow: false
   high_level_summary: true
-  high_level_summary_instructions: ""
   high_level_summary_placeholder: "@coderabbitai summary"
-  high_level_summary_in_walkthrough: false
-  auto_title_placeholder: "@coderabbitai"
-  auto_title_instructions: ""
   review_status: true
   commit_status: true
   fail_commit_status: false
@@ -21,175 +21,334 @@ reviews:
   estimate_code_review_effort: true
   assess_linked_issues: true
   related_issues: true
-  related_prs: false
-  suggested_labels: false
-  labeling_instructions: []
+  related_prs: true
+  suggested_labels: true
   auto_apply_labels: false
   suggested_reviewers: false
-  auto_assign_reviewers: false
-  in_progress_fortune: true
   poem: false
-  enable_prompt_for_ai_agents: true
-  path_filters: []
-  path_instructions: []
   abort_on_close: true
-  disable_cache: false
+
+  path_instructions:
+    - path: "src/**/*.rs"
+      instructions: |
+        - Follow Rust naming conventions (snake_case for functions/variables/files, PascalCase for types/structs/enums)
+        - Minimize `.clone()` calls; prefer references and borrowing
+        - Use `&[T]` instead of `&Vec<T>` when Vec-specific methods are not needed
+        - Never use `unwrap()` or `expect()` in production paths; propagate errors with `?`
+        - No blocking operations inside async handlers
+        - Ensure `Result<T, E>` with domain-specific error types for fallible operations
+
+    - path: "src/routes/**/*.rs"
+      instructions: |
+        - Route handlers are HTTP-only: delegate all business logic to services
+        - Verify correct HTTP status codes: 200 OK, 201 Created, 204 No Content, 404 Not Found, 409 Conflict, 422 Unprocessable Entity
+        - Ensure `#[get]`/`#[post]`/`#[put]`/`#[patch]`/`#[delete]` attributes appear directly above `fn`, with doc comment above the attribute
+        - Check that state is accessed via `&State<PlayerCollection>` and locked with `.lock().map_err(|_| Status::InternalServerError)?`
+        - Surrogate key (UUID) is used only for `GET /players/{id}`; all mutation routes use `squad_number` as the natural key
+        - Verify each route module exposes a `pub fn routes() -> Vec<rocket::Route>` function
+
+    - path: "src/services/**/*.rs"
+      instructions: |
+        - Services must be pure business logic with no HTTP knowledge
+        - All fallible functions return `Result<T, CustomError>` with domain-specific error variants
+        - Verify `squad_number` uniqueness is enforced on create
+        - On update, UUID and squad_number are always preserved from the existing record — request body values for these fields are ignored
+        - Functions should accept `&[Player]` or `&mut Vec<Player>` (not `&Vec<Player>`) when a slice suffices
+
+    - path: "src/models/**/*.rs"
+      instructions: |
+        - Maintain three distinct types: `Player` (storage), `PlayerRequest` (input), `PlayerResponse` (output)
+        - Verify `serde` derive macros and camelCase JSON field naming (`#[serde(rename_all = "camelCase")]`)
+        - `id` (UUID) and `squad_number` are immutable once set — validate that no model allows changing them after creation
+        - `PlayerRequest` fields should all be required except where explicitly optional (e.g. `PATCH` payloads)
+
+    - path: "src/state/**/*.rs"
+      instructions: |
+        - `PlayerCollection` is `Mutex<Vec<Player>>` — verify no blocking operations hold the lock longer than needed
+        - Seed data in `initialize_players()` must not be modified without discussion
+        - Check that the module exposes only what is needed for external use
+
+    - path: "src/main.rs"
+      instructions: |
+        - Verify `#[launch]` macro is used to generate `main()`
+        - Check all route modules are mounted at "/"
+        - Ensure state is initialized with `PlayerCollection::new(initialize_players())`
+        - Port must remain 9000 (configured in Rocket.toml)
+
+    - path: "src/lib.rs"
+      instructions: |
+        - Verify all modules (`models`, `routes`, `services`, `state`) are re-exported as `pub mod`
+        - This file exists solely to expose modules to integration tests — keep it minimal
+
+    - path: "tests/player_routes_tests.rs"
+      instructions: |
+        - Integration tests only — import from the library crate (`rust_samples_rocket_restful::`)
+        - Follow AAA pattern with `// Arrange`, `// Act`, `// Assert` section comments
+        - Naming convention: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
+          (e.g. `test_request_get_player_by_id_existing_response_status_ok`)
+        - Use `setup_client()` (full 26-player seed) for all tests except POST creation
+        - Use `setup_client_for_post()` (25-player seed, squad 16 excluded) for POST creation tests
+        - Use `player_request_for_creation_json()` and `player_request_for_update_json()` fixtures — no ad-hoc JSON payloads
+        - Use `common::SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode UUID strings inline
+        - PUT tests must capture the original UUID via GET before calling PUT, then assert the response preserves it
+        - Verify complete response objects (all fields), not just status codes
+
+    - path: "tests/concurrency_tests.rs"
+      instructions: |
+        - Tests the `Mutex<Vec<Player>>` state layer directly — do NOT use `rocket::local::blocking::Client`
+        - `blocking::Client` is not `Sync` and cannot be shared across threads via `Arc`
+        - Use `Arc<PlayerCollection>` + `std::thread` for all concurrency scenarios
+        - Use `common::player_request_for_creation()` as the base fixture and override `squad_number` per thread
+        - Cover: concurrent reads, concurrent unique creates, concurrent duplicate creates, mixed reads/writes
+
+  path_filters:
+    - "!**/target/**"
+    - "!**/*.db"
+    - "!**/*.db-shm"
+    - "!**/*.db-wal"
+
   auto_review:
     enabled: true
     auto_incremental_review: true
-    ignore_title_keywords: []
-    labels:
-      - planning
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT REVIEW"
     drafts: false
-    base_branches: []
-    ignore_usernames: []
+    base_branches:
+      - master
+      - main
+
   finishing_touches:
     docstrings:
       enabled: true
     unit_tests:
       enabled: true
+    custom:
+      - name: "sync documentation"
+        instructions: |
+          This is a PoC/learning project targeting developers unfamiliar with the stack.
+          Documentation is a first-class concern. Review the PR changes and perform the
+          following three checks:
+
+          ## 1. Doc comments
+          For every public function, method, or handler touched in the PR:
+          - If it lacks a doc comment (`///`), add one using Rust's idiomatic format.
+          - If it has one but no longer matches the current signature, parameters,
+            or behavior, update it.
+          - Doc comments should explain *why* and *what*, not just restate the signature.
+            Assume the reader is learning Rust and Rocket.
+
+          ## 2. README.md
+          Check whether the PR introduces or removes endpoints, changes behavior,
+          adds dependencies, or modifies how to run the project.
+          If so, update the relevant sections of README.md to reflect the current state.
+          Do not rewrite sections unrelated to the changes.
+
+          ## 3. .github/copilot-instructions.md
+          If the PR introduces patterns, conventions, or architectural decisions that
+          should guide future AI-assisted contributions, add or update the relevant
+          instructions in .github/copilot-instructions.md.
+          Focus on things a developer (or AI assistant) unfamiliar with this specific
+          Rust/Rocket implementation should know before writing code here.
+
+      - name: "enforce http error handling"
+        instructions: |
+          Audit all HTTP handler functions in the changed files.
+          Verify that errors return appropriate HTTP status codes (404 for not found,
+          409 for conflict, 422 for malformed payloads, 500 for unexpected errors).
+          Flag handlers that return 200 on error, swallow errors silently, or use
+          bare status-only responses where a body would be appropriate.
+          Do not make changes; only report findings as a comment so fixes can be
+          applied consistently across the entire codebase.
+
+      - name: "idiomatic review"
+        instructions: |
+          Review the changed files for non-idiomatic Rust patterns. Flag code that
+          looks like it was translated from another language rather than written
+          naturally for Rust. Pay particular attention to:
+          - Unnecessary `.clone()` calls that could be replaced with references
+          - `unwrap()`/`expect()` in production paths
+          - `&Vec<T>` parameters where `&[T]` suffices
+          - Missing `?` propagation
+          - Blocking operations in async contexts
+          Suggest idiomatic alternatives with brief explanations. This is a PoC
+          comparison project, so idiomatic usage is a first-class concern.
+
+      - name: "verify api contract"
+        instructions: |
+          Review the changed files and verify that all HTTP endpoints (method, path,
+          request body shape, and response shape) match the project's intended REST API
+          contract. Check the README or any spec/contract file in the repo for reference.
+          Pay special attention to the surrogate vs. natural key design:
+          - UUID (`id`) is used only for `GET /players/{uuid}`
+          - `squad_number` is used for all mutation routes (PUT, DELETE, PATCH)
+          Flag any deviations — missing fields, wrong status codes, inconsistent naming.
+          Do not make changes; only report findings as a comment.
+
   pre_merge_checks:
     docstrings:
       mode: warning
       threshold: 80
     title:
       mode: warning
-      requirements: ""
+      requirements: |
+        - Use Conventional Commits format (feat:, fix:, chore:, docs:, test:, refactor:, ci:, perf:)
+        - Keep under 80 characters
+        - Be descriptive and specific
     description:
-      mode: warning
+      mode: off
     issue_assessment:
-      mode: warning
-    custom_checks: []
+      mode: off
+
   tools:
-    ast-grep:
-      rule_dirs: []
-      util_dirs: []
-      essential_rules: true
-      packages: []
-    shellcheck:
+    # Secret scanners
+    gitleaks:
       enabled: true
-    ruff:
+    trufflehog:
       enabled: true
-    markdownlint:
+
+    # IaC / infrastructure
+    checkov:
       enabled: true
-    github-checks:
-      enabled: true
-      timeout_ms: 90000
-    languagetool:
-      enabled: true
-      enabled_rules: []
-      disabled_rules: []
-      enabled_categories: []
-      disabled_categories: []
-      enabled_only: false
-      level: default
-    biome:
+    trivy:
       enabled: true
     hadolint:
       enabled: true
-    swiftlint:
-      enabled: true
-    phpstan:
-      enabled: true
-      level: default
-    phpmd:
-      enabled: true
-    phpcs:
-      enabled: true
-    golangci-lint:
-      enabled: true
-    yamllint:
-      enabled: true
-    gitleaks:
-      enabled: true
-    checkov:
-      enabled: true
-    detekt:
-      enabled: true
-    eslint:
-      enabled: true
-    flake8:
-      enabled: true
-    fortitudeLint:
-      enabled: true
-    rubocop:
-      enabled: true
-    buf:
-      enabled: true
-    regal:
-      enabled: true
-    actionlint:
-      enabled: true
-    pmd:
-      enabled: true
-    clang:
-      enabled: true
-    cppcheck:
-      enabled: true
+
+    # General static analysis
     semgrep:
       enabled: true
-    circleci:
+    opengrep:
       enabled: true
     clippy:
       enabled: true
-    sqlfluff:
+    shellcheck:
       enabled: true
-    prismaLint:
+
+    # File-type linters
+    yamllint:
       enabled: true
-    pylint:
+    actionlint:
       enabled: true
-    oxc:
-      enabled: true
-    shopifyThemeCheck:
-      enabled: true
-    luacheck:
-      enabled: true
-    brakeman:
+    markdownlint:
       enabled: true
     dotenvLint:
       enabled: true
-    htmlhint:
-      enabled: true
-    checkmake:
-      enabled: true
     osvScanner:
       enabled: true
+    github-checks:
+      enabled: true
+      timeout_ms: 120000
+
+    # Disable irrelevant tools for this Rust project
+    ruff:
+      enabled: false
+    biome:
+      enabled: false
+    swiftlint:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    detekt:
+      enabled: false
+    eslint:
+      enabled: false
+    flake8:
+      enabled: false
+    rubocop:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    pmd:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    prismaLint:
+      enabled: false
+    pylint:
+      enabled: false
+    oxc:
+      enabled: false
+    shopifyThemeCheck:
+      enabled: false
+    luacheck:
+      enabled: false
+    brakeman:
+      enabled: false
+    htmlhint:
+      enabled: false
+    languagetool:
+      enabled: false
+    circleci:
+      enabled: false
+    fortitudeLint:
+      enabled: false
+    stylelint:
+      enabled: false
+    checkmake:
+      enabled: false
+    blinter:
+      enabled: false
+    psscriptanalyzer:
+      enabled: false
+
 chat:
   art: true
   auto_reply: true
-  integrations:
-    jira:
-      usage: disabled
-    linear:
-      usage: disabled
+
 knowledge_base:
   opt_out: false
   web_search:
     enabled: true
   code_guidelines:
     enabled: true
-    filePatterns: []
+    filePatterns:
+      - ".github/copilot-instructions.md"
   learnings:
     scope: auto
   issues:
     scope: auto
-  jira:
-    usage: disabled
-    project_keys: []
-  linear:
-    usage: disabled
-    team_keys: []
   pull_requests:
     scope: auto
   mcp:
     usage: auto
-    disabled_servers: []
+
 code_generation:
   docstrings:
     language: en-US
-    path_instructions: []
+    path_instructions:
+      - path: "src/**/*.rs"
+        instructions: |
+          - Use Rust doc comments (`///`) for all public items
+          - Place module-level documentation in `//!` comments at the top of the file
+          - Document public functions, types, and trait implementations
+          - Include `# Returns`, `# Arguments`, and `# Example` sections where helpful
+          - Assume the reader is learning Rust — explain the *why*, not just the *what*
+          - Reference Rust-specific concepts (ownership, borrowing, RAII) when relevant
   unit_tests:
-    path_instructions: []
+    path_instructions:
+      - path: "tests/**/*.rs"
+        instructions: |
+          - Integration tests only — import from the library crate (`rust_samples_rocket_restful::`)
+          - Follow AAA pattern with `// Arrange`, `// Act`, `// Assert` comments
+          - Naming: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
+          - Use fixture functions for test data — no inline magic values
+          - Use `SEED_MESSI_ID` constant for UUID-based GET tests
+          - HTTP tests use `rocket::local::blocking::Client` via a `setup_client()` helper
+          - Concurrency tests use `Arc<PlayerCollection>` + `std::thread`
+
 issue_enrichment:
   auto_enrich:
     enabled: true
