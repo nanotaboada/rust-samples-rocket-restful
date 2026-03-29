@@ -6,26 +6,28 @@ use rust_samples_rocket_restful::models::player::{Player, PlayerRequest};
 use rust_samples_rocket_restful::services::player_service::{self, CreateError, UpdateError};
 use rust_samples_rocket_restful::state::player_collection::initialize_players;
 
-// Returns 25 Argentina players (excluding Thiago Almada, reserved for creation tests)
+// Returns 26 Argentina players (excluding Lo Celso, reserved for creation tests)
 fn players_except_player_for_creation() -> Vec<Player> {
     initialize_players()
         .into_iter()
-        .filter(|p| p.squad_number != 16)
+        .filter(|p| p.squad_number != 27)
         .collect()
 }
 
-// Test Fixture: Thiago Almada - Used for POST (create) tests
+// Test Fixture: Giovani Lo Celso — squad 27, reserved for POST (create) and DELETE tests.
+// Lo Celso was in Argentina's preliminary squad for Qatar 2022 before injury.
+// Squad 27 sits outside the seeded 1–26 range, so creation never conflicts with seed data.
 fn player_request_for_creation() -> PlayerRequest {
     PlayerRequest {
-        first_name: "Thiago".to_string(),
-        middle_name: "Ezequiel".to_string(),
-        last_name: "Almada".to_string(),
-        date_of_birth: "2001-04-26T00:00:00.000Z".to_string(),
-        squad_number: 16,
-        position: "Attacking Midfield".to_string(),
-        abbr_position: "AM".to_string(),
-        team: "Atlanta United FC".to_string(),
-        league: "Major League Soccer".to_string(),
+        first_name: "Giovani".to_string(),
+        middle_name: "".to_string(),
+        last_name: "Lo Celso".to_string(),
+        date_of_birth: "1996-07-09T00:00:00.000Z".to_string(),
+        squad_number: 27,
+        position: "Central Midfield".to_string(),
+        abbr_position: "CM".to_string(),
+        team: "Real Betis Balompié".to_string(),
+        league: "La Liga".to_string(),
         starting11: false,
     }
 }
@@ -64,7 +66,7 @@ fn test_request_get_players_all_response_body_players() {
 }
 
 // Seed UUID for Lionel Messi — matches the value in player_collection.rs
-const SEED_MESSI_ID: &str = "f10f398d-b2ff-40aa-acac-51f58d129bc7";
+const SEED_MESSI_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
 
 // GET /players/{uuid} ---------------------------------------------------------
 
@@ -86,8 +88,8 @@ fn test_request_get_player_id_existing_response_body_player() {
     assert_eq!(player.squad_number, 10);
     assert_eq!(player.position, "Right Winger");
     assert_eq!(player.abbr_position, "RW");
-    assert_eq!(player.team, "Inter Miami CF");
-    assert_eq!(player.league, "Major League Soccer");
+    assert_eq!(player.team, "Paris Saint-Germain");
+    assert_eq!(player.league, "Ligue 1");
     assert!(player.starting11);
 }
 
@@ -122,8 +124,8 @@ fn test_request_get_player_squadnumber_existing_response_body_player() {
     assert_eq!(player.squad_number, 10);
     assert_eq!(player.position, "Right Winger");
     assert_eq!(player.abbr_position, "RW");
-    assert_eq!(player.team, "Inter Miami CF");
-    assert_eq!(player.league, "Major League Soccer");
+    assert_eq!(player.team, "Paris Saint-Germain");
+    assert_eq!(player.league, "Ligue 1");
     assert!(player.starting11);
 }
 
@@ -152,24 +154,25 @@ fn test_request_post_player_body_valid_response_body_created() {
     assert!(result.is_ok());
     let response = result.unwrap();
     assert!(!response.id.is_empty());
-    assert_eq!(response.first_name, "Thiago");
-    assert_eq!(response.middle_name, "Ezequiel");
-    assert_eq!(response.last_name, "Almada");
-    assert_eq!(response.date_of_birth, "2001-04-26T00:00:00.000Z");
-    assert_eq!(response.squad_number, 16);
-    assert_eq!(response.position, "Attacking Midfield");
-    assert_eq!(response.abbr_position, "AM");
-    assert_eq!(response.team, "Atlanta United FC");
-    assert_eq!(response.league, "Major League Soccer");
+    assert_eq!(response.first_name, "Giovani");
+    assert_eq!(response.middle_name, "");
+    assert_eq!(response.last_name, "Lo Celso");
+    assert_eq!(response.date_of_birth, "1996-07-09T00:00:00.000Z");
+    assert_eq!(response.squad_number, 27);
+    assert_eq!(response.position, "Central Midfield");
+    assert_eq!(response.abbr_position, "CM");
+    assert_eq!(response.team, "Real Betis Balompié");
+    assert_eq!(response.league, "La Liga");
     assert!(!response.starting11);
-    assert_eq!(players.len(), 26);
+    assert_eq!(players.len(), 27);
 }
 
 // POST /players/ with duplicate squad number returns 409 Conflict
 #[test]
 fn test_request_post_player_body_duplicate_response_status_conflict() {
-    // Arrange
+    // Arrange — insert Lo Celso first, then attempt a second creation
     let mut players = initialize_players();
+    player_service::create(&mut players, player_request_for_creation()).unwrap();
     let request = player_request_for_creation();
     // Act
     let result = player_service::create(&mut players, request);
@@ -179,7 +182,7 @@ fn test_request_post_player_body_duplicate_response_status_conflict() {
         result.unwrap_err(),
         CreateError::DuplicateSquadNumber
     ));
-    assert_eq!(players.len(), 26);
+    assert_eq!(players.len(), 27);
 }
 
 // POST /players/ with valid body assigns a non-empty UUID
@@ -272,14 +275,15 @@ fn test_request_put_player_squadnumber_existing_body_squad_number_immutable() {
 // DELETE /players/squadnumber/{squad_number} with existing squad number returns 204 No Content
 #[test]
 fn test_request_delete_player_squadnumber_existing_response_status_ok() {
-    // Arrange
+    // Arrange — insert Lo Celso (squad 27) first, then delete by squad number
     let mut players = initialize_players();
-    // Act — Alejandro Gómez wears squad_number 17
-    let result = player_service::delete(&mut players, 17);
+    player_service::create(&mut players, player_request_for_creation()).unwrap();
+    // Act
+    let result = player_service::delete(&mut players, 27);
     // Assert
     assert!(result);
-    assert_eq!(players.len(), 25);
-    assert!(player_service::get_by_squad_number(&players, 17).is_none());
+    assert_eq!(players.len(), 26);
+    assert!(player_service::get_by_squad_number(&players, 27).is_none());
 }
 
 // DELETE /players/squadnumber/{squad_number} with unknown squad number returns 404 Not Found

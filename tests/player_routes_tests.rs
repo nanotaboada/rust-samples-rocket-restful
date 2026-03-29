@@ -21,8 +21,8 @@ fn setup_client() -> Client {
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
-// 25-player seed (squad 16 excluded) — used by POST creation tests so the
-// canonical Thiago Almada fixture (squad 16) does not conflict
+// 26-player seed (squad 27 excluded) — used by POST creation tests so the
+// canonical Lo Celso fixture (squad 27) does not conflict
 fn setup_client_for_post() -> Client {
     let players = PlayerCollection::new(common::players_except_player_for_creation());
     let rocket = rocket::build()
@@ -32,18 +32,18 @@ fn setup_client_for_post() -> Client {
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
-// JSON mirror of common::player_request_for_creation() — Thiago Almada, squad 16
+// JSON mirror of common::player_request_for_creation() — Giovani Lo Celso, squad 27
 fn player_request_for_creation_json() -> serde_json::Value {
     serde_json::json!({
-        "firstName": "Thiago",
-        "middleName": "Ezequiel",
-        "lastName": "Almada",
-        "dateOfBirth": "2001-04-26T00:00:00.000Z",
-        "squadNumber": 16,
-        "position": "Attacking Midfield",
-        "abbrPosition": "AM",
-        "team": "Atlanta United FC",
-        "league": "Major League Soccer",
+        "firstName": "Giovani",
+        "middleName": "",
+        "lastName": "Lo Celso",
+        "dateOfBirth": "1996-07-09T00:00:00.000Z",
+        "squadNumber": 27,
+        "position": "Central Midfield",
+        "abbrPosition": "CM",
+        "team": "Real Betis Balompié",
+        "league": "La Liga",
         "starting11": false
     })
 }
@@ -142,8 +142,8 @@ fn test_request_get_player_by_id_existing_response_status_ok() {
     assert_eq!(body["squadNumber"], 10);
     assert_eq!(body["position"], "Right Winger");
     assert_eq!(body["abbrPosition"], "RW");
-    assert_eq!(body["team"], "Inter Miami CF");
-    assert_eq!(body["league"], "Major League Soccer");
+    assert_eq!(body["team"], "Paris Saint-Germain");
+    assert_eq!(body["league"], "Ligue 1");
     assert_eq!(body["starting11"], true);
 }
 
@@ -179,8 +179,8 @@ fn test_request_get_player_by_squadnumber_existing_response_status_ok() {
     assert_eq!(body["dateOfBirth"], "1987-06-24T00:00:00.000Z");
     assert_eq!(body["position"], "Right Winger");
     assert_eq!(body["abbrPosition"], "RW");
-    assert_eq!(body["team"], "Inter Miami CF");
-    assert_eq!(body["league"], "Major League Soccer");
+    assert_eq!(body["team"], "Paris Saint-Germain");
+    assert_eq!(body["league"], "Ligue 1");
     assert_eq!(body["starting11"], true);
 }
 
@@ -200,7 +200,7 @@ fn test_request_get_player_by_squadnumber_nonexistent_response_status_not_found(
 // POST /players with valid body returns 201 Created with full player response
 #[test]
 fn test_request_post_player_body_valid_response_status_created() {
-    // Arrange — 25-player seed (no squad 16), so Thiago Almada can be created
+    // Arrange — 26-player seed (no squad 27), so Lo Celso can be created
     let client = setup_client_for_post();
     let body = player_request_for_creation_json();
     // Act
@@ -215,29 +215,34 @@ fn test_request_post_player_body_valid_response_status_created() {
         serde_json::from_str(&response.into_string().unwrap()).unwrap();
     assert!(!response_body["id"].as_str().unwrap().is_empty());
     assert_eq!(response_body["id"].as_str().unwrap().len(), 36); // UUID v4
-    assert_eq!(response_body["firstName"], "Thiago");
-    assert_eq!(response_body["middleName"], "Ezequiel");
-    assert_eq!(response_body["lastName"], "Almada");
-    assert_eq!(response_body["dateOfBirth"], "2001-04-26T00:00:00.000Z");
-    assert_eq!(response_body["squadNumber"], 16);
-    assert_eq!(response_body["position"], "Attacking Midfield");
-    assert_eq!(response_body["abbrPosition"], "AM");
-    assert_eq!(response_body["team"], "Atlanta United FC");
-    assert_eq!(response_body["league"], "Major League Soccer");
+    assert_eq!(response_body["firstName"], "Giovani");
+    assert_eq!(response_body["middleName"], "");
+    assert_eq!(response_body["lastName"], "Lo Celso");
+    assert_eq!(response_body["dateOfBirth"], "1996-07-09T00:00:00.000Z");
+    assert_eq!(response_body["squadNumber"], 27);
+    assert_eq!(response_body["position"], "Central Midfield");
+    assert_eq!(response_body["abbrPosition"], "CM");
+    assert_eq!(response_body["team"], "Real Betis Balompié");
+    assert_eq!(response_body["league"], "La Liga");
     assert_eq!(response_body["starting11"], false);
 }
 
 // POST /players with duplicate squad number returns 409 Conflict
 #[test]
 fn test_request_post_player_body_duplicate_response_status_conflict() {
-    // Arrange — full 26-player seed, squad 16 already present
+    // Arrange — POST Lo Celso once, then attempt a second creation (squad 27 now exists)
     let client = setup_client();
-    let body = player_request_for_creation_json(); // squad 16 — conflicts with seed
+    let body = player_request_for_creation_json();
+    client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
     // Act
     let response = client
         .post("/players")
         .header(ContentType::JSON)
-        .body(body.to_string())
+        .body(player_request_for_creation_json().to_string())
         .dispatch();
     // Assert
     assert_eq!(response.status(), Status::Conflict);
@@ -301,10 +306,15 @@ fn test_request_put_player_squadnumber_nonexistent_response_status_not_found() {
 // DELETE /players/squadnumber/{squad_number} with existing number returns 204
 #[test]
 fn test_request_delete_player_squadnumber_existing_response_status_no_content() {
-    // Arrange
+    // Arrange — POST Lo Celso (squad 27) first, then delete by squad number
     let client = setup_client();
-    // Act — Alejandro Gómez wears squad_number 17
-    let response = client.delete("/players/squadnumber/17").dispatch();
+    client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(player_request_for_creation_json().to_string())
+        .dispatch();
+    // Act
+    let response = client.delete("/players/squadnumber/27").dispatch();
     // Assert
     assert_eq!(response.status(), Status::NoContent);
 }
