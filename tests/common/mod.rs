@@ -6,12 +6,9 @@
 
 #![allow(dead_code)]
 
-use rust_samples_rocket_restful::{
-    models::player::{Player, PlayerRequest},
-    state::player_collection::initialize_players,
-};
+use rust_samples_rocket_restful::models::player::PlayerRequest;
 
-// Seed UUID for Lionel Messi — matches the value in player_collection.rs
+// Seed UUID for Lionel Messi — matches the value seeded in player_collection.rs
 pub const SEED_MESSI_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
 
 // Test Fixture: Giovani Lo Celso — squad 27, reserved for POST (create) and DELETE tests.
@@ -30,13 +27,4 @@ pub fn player_request_for_creation() -> PlayerRequest {
         league: "La Liga".to_string(),
         starting11: false,
     }
-}
-
-// Returns the full 26-player seed minus squad 27, so POST tests can create
-// Lo Celso (squad 27) without hitting a duplicate-squad-number conflict.
-pub fn players_except_player_for_creation() -> Vec<Player> {
-    initialize_players()
-        .into_iter()
-        .filter(|p| p.squad_number != 27)
-        .collect()
 }

@@ -19,7 +19,7 @@ mod routes;
 mod services;
 mod state;
 
-use state::player_collection::{PlayerCollection, initialize_players};
+use state::player_collection::{PlayerCollection, initialize_database};
 
 /// Configures and launches the Rocket web server.
 ///
@@ -32,9 +32,9 @@ use state::player_collection::{PlayerCollection, initialize_players};
 /// type, avoiding a verbose type annotation.
 #[launch]
 fn rocket() -> _ {
-    let players = PlayerCollection::new(initialize_players());
+    let db = PlayerCollection::new(initialize_database());
     rocket::build()
-        .manage(players)
+        .manage(db)
         .mount("/", routes::health::routes())
         .mount("/", routes::players::routes())
 }
