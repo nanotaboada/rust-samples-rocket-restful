@@ -6,12 +6,9 @@
 
 #![allow(dead_code)]
 
-use rust_samples_rocket_restful::{
-    models::player::{Player, PlayerRequest},
-    state::player_collection::initialize_players,
-};
+use rust_samples_rocket_restful::models::player::PlayerRequest;
 
-// Seed UUID for Lionel Messi — matches the value in player_collection.rs
+// Seed UUID for Lionel Messi — matches the value seeded in player_collection.rs
 pub const SEED_MESSI_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
 
 // Test Fixture: Giovani Lo Celso — squad 27, reserved for POST (create) and DELETE tests.
@@ -32,11 +29,21 @@ pub fn player_request_for_creation() -> PlayerRequest {
     }
 }
 
-// Returns the full 26-player seed minus squad 27, so POST tests can create
-// Lo Celso (squad 27) without hitting a duplicate-squad-number conflict.
-pub fn players_except_player_for_creation() -> Vec<Player> {
-    initialize_players()
-        .into_iter()
-        .filter(|p| p.squad_number != 27)
-        .collect()
+// Test Fixture: Emiliano Martínez — used for PUT (update) tests.
+// squad_number 23 matches the seeded Damián Martínez (squad_number: 23).
+// squadNumber in the body is deliberately set to 99 (≠ 23) to prove the route
+// param wins and the natural key remains immutable.
+pub fn player_request_for_update() -> PlayerRequest {
+    PlayerRequest {
+        first_name: "Emiliano".to_string(),
+        middle_name: "".to_string(),
+        last_name: "Martínez".to_string(),
+        date_of_birth: "1992-09-02T00:00:00.000Z".to_string(),
+        squad_number: 99,
+        position: "Goalkeeper".to_string(),
+        abbr_position: "GK".to_string(),
+        team: "Aston Villa FC".to_string(),
+        league: "Premier League".to_string(),
+        starting11: true,
+    }
 }

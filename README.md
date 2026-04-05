@@ -1,12 +1,13 @@
 # 🧪 RESTful API with Rust and Rocket
 
-[![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-white.svg)](https://opensource.org/licenses/MIT)
+[![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg)](https://opensource.org/licenses/MIT)
 ![Dependabot](https://img.shields.io/badge/Dependabot-contributing-025E8C?logo=dependabot&logoColor=white&labelColor=181818)
-![GitHub Copilot](https://img.shields.io/badge/GitHub_Copilot-contributing-8662C5?logo=githubcopilot&logoColor=white&labelColor=181818)
-![Claude](https://img.shields.io/badge/Claude-Sonnet_4.6-D97757?logo=claude&logoColor=white&labelColor=181818)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/nanotaboada/rust-samples-rocket-restful?utm_source=oss&utm_medium=github&utm_campaign=nanotaboada%2Frust-samples-rocket-restful&labelColor=181818&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+![Copilot](https://img.shields.io/badge/Copilot-contributing-8662C5?logo=githubcopilot&logoColor=white&labelColor=181818)
+![Claude](https://img.shields.io/badge/Claude-contributing-D97757?logo=claude&logoColor=white&labelColor=181818)
+![CodeRabbit](https://img.shields.io/badge/CodeRabbit-reviewing-FF570A?logo=coderabbit&logoColor=white&labelColor=181818)
 
-Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/) and [Rocket](https://rocket.rs/). Manage football player data with thread-safe in-memory storage using Mutex.
+Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/) and [Rocket](https://rocket.rs/). Manage football player data with SQLite persistence and thread-safe access via Mutex.
 
 ## Table of Contents
 
@@ -26,7 +27,7 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 
 - 🔌 **RESTful CRUD operations** for football player data
 - 🩺 **Health check endpoint** for monitoring
-- 🔒 **Thread-safe state management** with Mutex
+- 🔒 **Thread-safe state management** with Mutex-wrapped SQLite connection
 - ✅ **Type-safe request/response models**
 - 🎯 **Squad number uniqueness validation**
 - 📦 **Modular architecture** with clear separation of concerns
@@ -39,17 +40,17 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 | **Web Framework** | [Rocket 0.5.1](https://rocket.rs/) |
 | **Serialization** | [Serde](https://serde.rs/) |
 | **Unique IDs** | [uuid](https://github.com/uuid-rs/uuid) |
-| **Storage** | In-memory (`Mutex<Vec<Player>>`) |
+| **Database** | [SQLite](https://www.sqlite.org/) via [rusqlite](https://github.com/rusqlite/rusqlite) (bundled) |
 
 ## Project Structure
 
 ```tree
 /
 ├── src/
-│   ├── main.rs                      # Application entry point (~35 lines)
+│   ├── main.rs                      # Application entry point
 │   ├── models/
 │   │   ├── mod.rs                   # Module exports
-│   │   └── player.rs                # Player, PlayerRequest, PlayerResponse structs
+│   │   └── player.rs                # PlayerRequest, PlayerResponse structs
 │   ├── routes/
 │   │   ├── mod.rs                   # Module exports
 │   │   ├── health.rs                # Health check endpoint handler
@@ -59,8 +60,9 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 │   │   └── player_service.rs        # Business logic (CRUD operations, validation)
 │   └── state/
 │       ├── mod.rs                   # Module exports
-│       └── player_collection.rs     # Thread-safe state (Mutex<Vec<Player>>)
-├── players.json                     # Pre-seeded player data (26 players)
+│       └── player_collection.rs     # Thread-safe state (Mutex<Connection>), DB init and seed
+├── storage/
+│   └── players-sqlite3.db           # Pre-seeded SQLite database (26 players, committed)
 ├── Cargo.toml                       # Rust dependencies
 └── rust-toolchain.toml              # Rust version configuration
 ```
@@ -69,8 +71,8 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 
 | Module | Responsibility |
 | ------ | -------------- |
-| **models** | Data structures for the player domain (Player, PlayerRequest, PlayerResponse) and conversions between them |
-| **state** | Thread-safe application state management using Mutex for concurrent access |
+| **models** | Data structures for the player domain (PlayerRequest, PlayerResponse) |
+| **state** | Thread-safe SQLite connection management (`Mutex<Connection>`), database initialization and seed |
 | **services** | Pure business logic functions for CRUD operations, validation, and ID generation |
 | **routes** | HTTP endpoint handlers that delegate to services and handle HTTP concerns (status codes, JSON) |
 | **main.rs** | Application initialization, route mounting, and data loading |
@@ -144,13 +146,13 @@ Arrows follow the wiring direction: `A --> B` means A is provided to B. Solid ar
 
 ### Composition Root Pattern
 
-`main` is the composition root: it builds the Rocket instance, loads the pre-seeded player data from JSON, registers `PlayerCollection` as managed state via `.manage()`, and mounts all route handlers.
+`main` is the composition root: it builds the Rocket instance, opens the pre-seeded SQLite database, registers `PlayerCollection` as managed state via `.manage()`, and mounts all route handlers.
 
 ### Layered Architecture
 
 Four layers: Initialization (`main`), HTTP (`routes`), Business (`services`), and Data (`state`).
 
-`models` is a cross-cutting type concern — data structures for the player domain (`Player`, `PlayerRequest`, `PlayerResponse`) consumed across multiple layers, with no business logic of its own.
+`models` is a cross-cutting type concern — data structures for the player domain (`PlayerRequest`, `PlayerResponse`) consumed across multiple layers, with no business logic of its own.
 
 ### Color Coding
 

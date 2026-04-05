@@ -1,6 +1,7 @@
 // Integration tests for player route handlers
 // Exercises the full HTTP request/response cycle using Rocket's blocking test
-// client. Each test gets a fresh Rocket instance with a dedicated seed.
+// client. Each test gets a fresh Rocket instance backed by an in-memory SQLite
+// database seeded with the full 26-player Argentina 2022 World Cup squad.
 
 mod common;
 
@@ -8,25 +9,31 @@ use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
 use rust_samples_rocket_restful::{
     routes,
-    state::player_collection::{PlayerCollection, initialize_players},
+    state::player_collection::{PlayerCollection, initialize_test_database},
 };
 
 // Full 26-player seed — used by all tests except POST creation
 fn setup_client() -> Client {
-    let players = PlayerCollection::new(initialize_players());
+    let db = PlayerCollection::new(initialize_test_database());
     let rocket = rocket::build()
-        .manage(players)
+        .manage(db)
         .mount("/", routes::health::routes())
         .mount("/", routes::players::routes());
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
-// 26-player seed (squad 27 excluded) — used by POST creation tests so the
-// canonical Lo Celso fixture (squad 27) does not conflict
+// Standard 26-player seed (squads 1–26) — used by POST creation tests.
+// Squad 27 (Lo Celso fixture) is not in the seed, so POST creation succeeds.
 fn setup_client_for_post() -> Client {
-    let players = PlayerCollection::new(common::players_except_player_for_creation());
+    use rust_samples_rocket_restful::services::player_service;
+
+    let conn = initialize_test_database();
+    // Delete squad 27 if it was somehow seeded; Lo Celso is not in the 26-player
+    // seed, so this is a no-op — but kept for symmetry with the old Vec approach.
+    player_service::delete(&conn, 27).ok();
+    let db = PlayerCollection::new(conn);
     let rocket = rocket::build()
-        .manage(players)
+        .manage(db)
         .mount("/", routes::health::routes())
         .mount("/", routes::players::routes());
     Client::tracked(rocket).expect("valid rocket instance")
