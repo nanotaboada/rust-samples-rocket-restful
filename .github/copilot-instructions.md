@@ -46,7 +46,7 @@ Both `id` (UUID) and `squad_number` are **immutable once set**. On `PUT`, the UU
 - **Errors**: `Result<T, CustomError>` with domain-specific error types; never `unwrap()` or `expect()` in production paths; always propagate with `?`
 - **Safety**: no blocking operations in async handlers; no global mutable state without `Mutex`
 - **Tests**: integration tests in `tests/`; Arrange/Act/Assert with section comments; fixture functions for test data (not stubs); naming `test_request_{method}_{endpoint}_{condition}_response_{verification}`; verify complete response objects
-- **Test fixtures**: use `initialize_test_database()` for the full 26-player seeded in-memory DB; use `initialize_empty_test_database()` for an empty schema with no rows; use `player_request_for_creation()` and `player_request_for_update()` from `tests/common` for request bodies; use `SEED_MESSI_ID` constant from `tests/common` for UUID-based GET tests — never hardcode the UUID string inline
+- **Test fixtures**: use `initialize_test_database()` (defined in `src/state/player_collection.rs`) for the full 26-player seeded in-memory DB; use `initialize_empty_test_database()` (defined in `src/state/player_collection.rs`) for an empty schema with no rows; use `player_request_for_creation()`, `player_request_for_update()`, and `SEED_MESSI_ID` from `tests/common` for request bodies and UUID-based GET tests — never hardcode the UUID string inline
 - **Avoid**: `unwrap()`/`expect()` in production, unnecessary `.clone()`, blocking in async handlers, missing `?` propagation, inline comments between AAA test sections
 
 ## Commands

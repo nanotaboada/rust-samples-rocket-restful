@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `initialize_test_database()` opens an in-memory SQLite database for use in all test suites
 
 ### Changed
+- Rename `.claude/commands/precommit.md` to `pre-commit.md`; update `CLAUDE.md` reference from `/precommit` to `/pre-commit`
 - `PlayerCollection` type alias changed from `Mutex<Vec<Player>>` to `Mutex<rusqlite::Connection>`
 - All service functions now accept `&rusqlite::Connection` instead of `&[Player]` / `&mut Vec<Player>`
 - All tests updated to use in-memory SQLite (`Connection::open_in_memory()`) instead of a `Vec<Player>` seed
