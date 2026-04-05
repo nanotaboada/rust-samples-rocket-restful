@@ -12,24 +12,22 @@ use uuid::Uuid;
 ///
 /// Represents validation failures that can occur when creating a new player.
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum CreateError {
     /// The squad number is already assigned to another player
     DuplicateSquadNumber,
     /// An unexpected database error occurred
-    Database(rusqlite::Error),
+    Database(#[allow(dead_code)] rusqlite::Error),
 }
 
 /// Error types for player update operations.
 ///
 /// Represents failures that can occur when updating an existing player.
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum UpdateError {
     /// No player with the given squad number exists
     NotFound,
     /// An unexpected database error occurred
-    Database(rusqlite::Error),
+    Database(#[allow(dead_code)] rusqlite::Error),
 }
 
 /// Maps a `rusqlite::Row` to a `PlayerResponse`.
