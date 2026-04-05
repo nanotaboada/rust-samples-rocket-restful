@@ -1,0 +1,201 @@
+# Continuous Deployment for Rust
+# Triggered only on version tags with Ballon d'Or nominees names
+# Example tag: v1.0.0-benzema
+
+name: Rust CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*-*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test before deployment
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cd-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Build release binary
+        run: cargo build --release --verbose
+
+      - name: Run tests
+        run: cargo test --verbose
+
+  deploy:
+    name: Build and publish Docker image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag commit is reachable from master
+        run: |
+          if ! git branch -r --contains "${{ github.sha }}" | grep -q "origin/master"; then
+            echo "Error: Commit ${{ github.sha }} is not reachable from origin/master"
+            echo "Ensure the PR is merged into master before pushing a release tag"
+            exit 1
+          fi
+          echo "Commit ${{ github.sha }} is reachable from origin/master"
+
+      - name: Extract version and nominee name from tag
+        id: extract_tag
+        run: |
+          # Tag format: v1.0.0-benzema
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+
+          # Extract semantic version (e.g., v1.0.0-benzema -> 1.0.0)
+          SEMVER=$(echo "$TAG_NAME" | sed -E 's/^v([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+
+          # Extract nominee name (e.g., v1.0.0-benzema -> benzema)
+          NOMINEE=$(echo "$TAG_NAME" | sed -E 's/^v[0-9]+\.[0-9]+\.[0-9]+-//')
+
+          # Validate semver format (X.Y.Z)
+          if ! echo "$SEMVER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: Invalid semantic version '$SEMVER' extracted from tag '$TAG_NAME'"
+            echo "Expected format: v{MAJOR}.{MINOR}.{PATCH}-{NOMINEE} (e.g., v1.0.0-benzema)"
+            exit 1
+          fi
+
+          # Valid nominee names (A-Z from CHANGELOG.md)
+          VALID_NOMINEES="aguero benzema cannavaro drogba etoo figo griezmann haaland iniesta jorginho kaka lewandowski messi neymar owen pirlo quaresma ronaldo salah torres umtiti vandijk weah xavi yayatoure zlatan"
+
+          # Validate nominee name is not empty
+          if [ -z "$NOMINEE" ]; then
+            echo "Error: Nominee name is empty in tag '$TAG_NAME'"
+            echo "Expected format: v{MAJOR}.{MINOR}.{PATCH}-{NOMINEE} (e.g., v1.0.0-benzema)"
+            exit 1
+          fi
+
+          # Validate nominee name against the list
+          if ! echo "$VALID_NOMINEES" | grep -qw "$NOMINEE"; then
+            echo "Error: Invalid nominee name '$NOMINEE' in tag '$TAG_NAME'"
+            echo "Valid nominees (A-Z): $VALID_NOMINEES"
+            echo "See CHANGELOG.md for the complete list"
+            exit 1
+          fi
+
+          # Export validated outputs
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "semver=$SEMVER" >> $GITHUB_OUTPUT
+          echo "nominee=$NOMINEE" >> $GITHUB_OUTPUT
+
+          echo "Release version: $SEMVER"
+          echo "Nominee name: $NOMINEE"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Build and push Docker image to GitHub Container Registry
+        uses: docker/build-push-action@v7.0.0
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.semver }}
+            ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.nominee }}
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-' | sed -n '2p')
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "First release - no previous tag found"
+            CHANGELOG="Initial release"
+          else
+            echo "Generating changelog from $PREVIOUS_TAG to ${{ steps.extract_tag.outputs.tag_name }}"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${PREVIOUS_TAG}..${{ steps.extract_tag.outputs.tag_name }})
+          fi
+
+          # Write changelog to file
+          echo "$CHANGELOG" > changelog.txt
+          cat changelog.txt
+
+          # Set output for use in release body
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2.6.1
+        with:
+          name: "v${{ steps.extract_tag.outputs.semver }} - ${{ steps.extract_tag.outputs.nominee }} 🏅"
+          tag_name: ${{ steps.extract_tag.outputs.tag_name }}
+          body: |
+            # Release ${{ steps.extract_tag.outputs.semver }} - ${{ steps.extract_tag.outputs.nominee }} 🏅
+
+            ## Docker Images
+
+            Pull this release using any of the following tags:
+
+            ```bash
+            # By semantic version (recommended)
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.semver }}
+
+            # By nominee name
+            docker pull ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.nominee }}
+
+            # Latest
+            docker pull ghcr.io/${{ github.repository }}:latest
+            ```
+
+            ## Quick Start
+
+            ```bash
+            docker run -p 9000:9000 ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.semver }}
+            ```
+
+            ---
+
+            📦 **Package:** [ghcr.io/${{ github.repository }}](https://github.com/${{ github.repository }}/pkgs/container/${{ github.event.repository.name }})
+          draft: false
+          prerelease: false
+          generate_release_notes: true
