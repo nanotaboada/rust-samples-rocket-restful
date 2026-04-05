@@ -1,0 +1,21 @@
+name: rust-samples-rocket-restful
+
+services:
+  api:
+    image: rust-samples-rocket-restful
+    container_name: rocket-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    volumes:
+      - storage:/storage/
+    environment:
+      - STORAGE_PATH=/storage/players-sqlite3.db
+      - ROCKET_PROFILE=release
+    restart: unless-stopped
+
+volumes:
+  storage:
+    name: rust-samples-rocket-restful_storage

@@ -1,0 +1,81 @@
+### HTTP Requests for rust-samples-rocket-restful
+### Supported by:
+###   - VS Code: REST Client extension (humao.rest-client)
+###   - JetBrains IDEs: built-in HTTP Client
+
+@baseUrl             = http://localhost:9000
+@newSquadNumber      = 27
+@existingSquadNumber = 23
+
+# -----------------------------------------------------------------------------
+
+### Health Check
+# GET /health → 200 OK
+GET {{baseUrl}}/health
+
+###
+
+### Create Player
+# POST /players → 201 Created
+POST {{baseUrl}}/players
+Content-Type: application/json
+
+{
+  "firstName": "Giovani",
+  "middleName": "",
+  "lastName": "Lo Celso",
+  "dateOfBirth": "1996-07-09T00:00:00.000Z",
+  "squadNumber": 27,
+  "position": "Central Midfield",
+  "abbrPosition": "CM",
+  "team": "Real Betis Balompié",
+  "league": "La Liga",
+  "starting11": false
+}
+
+###
+
+### Get All Players
+# GET /players → 200 OK
+GET {{baseUrl}}/players
+
+###
+
+### Get Player by ID
+# GET /players/:id → 200 OK
+GET {{baseUrl}}/players/acc433bf-d505-51fe-831e-45eb44c4d43c
+
+###
+
+### Get Player by Squad Number
+# GET /players/squadnumber/:squadnumber → 200 OK
+GET {{baseUrl}}/players/squadnumber/10
+
+###
+
+### Update Player
+# PUT /players/squadnumber/:squadnumber → 200 OK
+PUT {{baseUrl}}/players/squadnumber/{{existingSquadNumber}}
+Content-Type: application/json
+
+{
+  "firstName": "Emiliano",
+  "middleName": "",
+  "lastName": "Martínez",
+  "dateOfBirth": "1992-09-02T00:00:00.000Z",
+  "squadNumber": 23,
+  "position": "Goalkeeper",
+  "abbrPosition": "GK",
+  "team": "Aston Villa FC",
+  "league": "Premier League",
+  "starting11": true
+}
+
+###
+
+### Delete Player
+# DELETE /players/squadnumber/:squadnumber → 204 No Content
+# Requires Create Player to have been run first.
+DELETE {{baseUrl}}/players/squadnumber/{{newSquadNumber}}
+
+###
