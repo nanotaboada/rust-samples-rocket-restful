@@ -3,8 +3,7 @@ set -e
 
 # Helper function for formatted logging
 log() {
-    local message="$1"
-    echo "[ENTRYPOINT] $(date '+%Y/%m/%d - %H:%M:%S') | $message"
+    echo "[ENTRYPOINT] $(date '+%Y/%m/%d - %H:%M:%S') | $1"
     return 0
 }
 
@@ -17,6 +16,7 @@ if [ ! -f "$VOLUME_STORAGE_PATH" ]; then
     log "No existing database file found in volume."
     if [ -f "$IMAGE_STORAGE_PATH" ]; then
         log "Copying database file to writable volume..."
+        mkdir -p "$(dirname "$VOLUME_STORAGE_PATH")"
         cp "$IMAGE_STORAGE_PATH" "$VOLUME_STORAGE_PATH"
         log "Database initialized at $VOLUME_STORAGE_PATH"
     else

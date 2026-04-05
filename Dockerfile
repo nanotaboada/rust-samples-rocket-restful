@@ -81,6 +81,8 @@ RUN addgroup --system rocket && \
     mkdir -p /storage && \
     chown -R rocket:rocket /storage
 
+ENV STORAGE_PATH=/storage/players-sqlite3.db
+
 USER rocket
 
 EXPOSE 9000
