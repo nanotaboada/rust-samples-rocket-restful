@@ -25,6 +25,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: "1.88.0"
           components: rustfmt, clippy
 
       - name: Cache dependencies
@@ -192,6 +193,10 @@ jobs:
             ```bash
             docker run -p 9000:9000 ghcr.io/${{ github.repository }}:${{ steps.extract_tag.outputs.semver }}
             ```
+
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
 
             ---
 

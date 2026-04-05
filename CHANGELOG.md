@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Dockerfile` (multi-stage: `rust:1.88-slim-bookworm` builder → `debian:bookworm-slim` runtime), `compose.yaml`, `.dockerignore`, `scripts/entrypoint.sh`, and `scripts/healthcheck.sh` for container support (#40)
 - `rest/players.rest` with sample HTTP requests for all endpoints, compatible with VS Code REST Client and JetBrains HTTP Client (#40)
 - `humao.rest-client` recommendation added to `.vscode/extensions.json` (#40)
-- `.github/workflows/rust-cd.yml`: tag-based CD workflow triggered on `v*.*.*-*` tags; validates Ballon d'Or nominee name, builds and tests, publishes three Docker tags (`:semver`, `:nominee`, `:latest`) to GHCR, and creates a GitHub Release (#26)
+- `.github/workflows/rust-cd.yml`: tag-based CD workflow triggered on `v*.*.*-*` tags; validates Ballon d'Or nominee name, builds and tests with pinned toolchain `1.88.0`, publishes three Docker tags (`:semver`, `:nominee`, `:latest`) to GHCR, and creates a GitHub Release with commit changelog (#26)
 - README: added **Releases** section with release naming convention, step-by-step create-a-release workflow, pre-release checklist, and Docker pull instructions (#26)
 - CHANGELOG: added Ballon d'Or nominees list (A-Z) as release codenames (#26)
 
