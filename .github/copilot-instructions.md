@@ -2,7 +2,7 @@
 
 ## Overview
 
-REST API for managing football players built with Rust and Rocket. Implements CRUD operations with in-memory thread-safe storage (`Mutex<Vec<Player>>`), a layered architecture, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
+REST API for managing football players built with Rust and Rocket. Implements CRUD operations with SQLite persistence (`rusqlite`, bundled), a layered architecture, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
 
 ## Tech Stack
 
@@ -10,18 +10,20 @@ REST API for managing football players built with Rust and Rocket. Implements CR
 - **Framework**: Rocket 0.5 (async)
 - **Serialization**: Serde (JSON)
 - **Unique IDs**: uuid (v4 + serde features)
-- **Storage**: In-memory `Mutex<Vec<Player>>` (SQLite planned — Issue #23)
+- **Storage**: SQLite via `rusqlite` (bundled + trace features), `Mutex<Connection>`
 - **Testing**: Rust built-in test framework
 
 ## Structure
 
 ```text
 src/
-├── models/             — data structures: Player (storage), PlayerRequest (input), PlayerResponse (output)
+├── models/             — data structures: PlayerRequest (input), PlayerResponse (output)
 ├── routes/             — async Rocket handlers; HTTP concerns only                         [HTTP layer]
 ├── services/           — pure business logic; no HTTP knowledge; returns Result types      [business layer]
-└── state/              — thread-safe data access via Mutex<Vec<Player>>                    [data layer]
+└── state/              — thread-safe data access via Mutex<Connection>                     [data layer]
 tests/                  — integration tests (Arrange/Act/Assert pattern)
+storage/
+└── players-sqlite3.db  — pre-seeded SQLite database (committed)
 Rocket.toml             — server configuration (address, port)
 rust-toolchain.toml     — Rust 2024 edition lock
 ```
@@ -41,12 +43,11 @@ Both `id` (UUID) and `squad_number` are **immutable once set**. On `PUT`, the UU
 
 - **Naming**: snake_case (functions/variables/files), PascalCase (types/traits/structs)
 - **Ownership**: minimize `.clone()` calls; prefer references
-- **Slices**: use `&[T]`/`&mut [T]` instead of `&Vec<T>`/`&mut Vec<T>` when Vec-specific methods aren't needed
 - **Errors**: `Result<T, CustomError>` with domain-specific error types; never `unwrap()` or `expect()` in production paths; always propagate with `?`
 - **Safety**: no blocking operations in async handlers; no global mutable state without `Mutex`
 - **Tests**: integration tests in `tests/`; Arrange/Act/Assert with section comments; fixture functions for test data (not stubs); naming `test_request_{method}_{endpoint}_{condition}_response_{verification}`; verify complete response objects
-- **Test fixtures**: use `initialize_players()` for the full 26-player seed; use `players_except_player_for_creation()` (excludes squad 16) when testing POST; use `player_request_for_creation()` and `player_request_for_update()` for request bodies; use `SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode the UUID string inline
-- **Avoid**: `unwrap()`/`expect()` in production, unnecessary `.clone()`, blocking in async handlers, missing `?` propagation, inline comments between AAA test sections, `&Vec<T>` when a slice suffices
+- **Test fixtures**: use `initialize_test_database()` for the full 26-player seeded in-memory DB; use `initialize_empty_test_database()` for an empty schema with no rows; use `player_request_for_creation()` and `player_request_for_update()` from `tests/common` for request bodies; use `SEED_MESSI_ID` constant from `tests/common` for UUID-based GET tests — never hardcode the UUID string inline
+- **Avoid**: `unwrap()`/`expect()` in production, unnecessary `.clone()`, blocking in async handlers, missing `?` propagation, inline comments between AAA test sections
 
 ## Commands
 
@@ -64,8 +65,8 @@ cargo test -- --nocapture               # with output
 
 1. `cargo fmt`
 2. `cargo clippy --all-targets --all-features -- -D warnings` — must pass clean
-3. `cargo test` — all tests must pass
-4. `cargo build` — must succeed
+3. `cargo build` — must succeed
+4. `cargo test` — all tests must pass
 5. Commit message follows Conventional Commits format (enforced by commitlint)
 
 ### Commits
@@ -96,6 +97,7 @@ Example: `feat(api): add player stats endpoint (#42)`
 ### Never modify
 
 - Seed data in `src/state/player_collection.rs` (without discussion)
+- `storage/players-sqlite3.db` directly — regenerate by deleting and running `cargo run`
 - Port configuration (9000)
 - `rust-toolchain.toml` toolchain version
 - The surrogate/natural key design (UUID for GET, squad number for PUT/DELETE)
