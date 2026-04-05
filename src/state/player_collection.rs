@@ -51,6 +51,18 @@ pub fn initialize_test_database() -> Connection {
     conn
 }
 
+/// Opens an in-memory SQLite database and creates the schema with no rows.
+///
+/// Used exclusively in tests that need an empty but valid database (e.g. to
+/// verify behaviour against an empty collection). The schema is kept in sync
+/// with production via the shared `create_schema` helper.
+#[allow(dead_code)]
+pub fn initialize_empty_test_database() -> Connection {
+    let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
+    create_schema(&conn);
+    conn
+}
+
 /// Creates the `players` table if it does not already exist.
 fn create_schema(conn: &Connection) {
     conn.execute_batch(
@@ -65,7 +77,7 @@ fn create_schema(conn: &Connection) {
             abbr_position TEXT    NOT NULL,
             team          TEXT    NOT NULL,
             league        TEXT    NOT NULL,
-            starting11    INTEGER NOT NULL
+            starting11    INTEGER NOT NULL CHECK (starting11 IN (0, 1))
         );",
     )
     .expect("Failed to create schema");

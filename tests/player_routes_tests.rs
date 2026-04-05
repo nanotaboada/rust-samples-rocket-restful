@@ -22,8 +22,8 @@ fn setup_client() -> Client {
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
-// 26-player seed with squad 27 excluded — used by POST creation tests so the
-// canonical Lo Celso fixture (squad 27) does not conflict
+// Standard 26-player seed (squads 1–26) — used by POST creation tests.
+// Squad 27 (Lo Celso fixture) is not in the seed, so POST creation succeeds.
 fn setup_client_for_post() -> Client {
     use rust_samples_rocket_restful::services::player_service;
 

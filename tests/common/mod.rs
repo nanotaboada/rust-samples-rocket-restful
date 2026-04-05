@@ -28,3 +28,22 @@ pub fn player_request_for_creation() -> PlayerRequest {
         starting11: false,
     }
 }
+
+// Test Fixture: Emiliano Martínez — used for PUT (update) tests.
+// squad_number 23 matches the seeded Damián Martínez (squad_number: 23).
+// squadNumber in the body is deliberately set to 99 (≠ 23) to prove the route
+// param wins and the natural key remains immutable.
+pub fn player_request_for_update() -> PlayerRequest {
+    PlayerRequest {
+        first_name: "Emiliano".to_string(),
+        middle_name: "".to_string(),
+        last_name: "Martínez".to_string(),
+        date_of_birth: "1992-09-02T00:00:00.000Z".to_string(),
+        squad_number: 99,
+        position: "Goalkeeper".to_string(),
+        abbr_position: "GK".to_string(),
+        team: "Aston Villa FC".to_string(),
+        league: "Premier League".to_string(),
+        starting11: true,
+    }
+}

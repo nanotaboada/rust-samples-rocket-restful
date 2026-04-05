@@ -55,7 +55,8 @@ pub fn get_all(conn: &Connection) -> Result<Vec<PlayerResponse>, rusqlite::Error
     let mut stmt = conn.prepare(
         "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
                 position, abbr_position, team, league, starting11
-         FROM players",
+         FROM players
+         ORDER BY squad_number",
     )?;
     let rows = stmt.query_map([], row_to_response)?;
     rows.collect()
@@ -121,7 +122,14 @@ pub fn create(conn: &Connection, request: PlayerRequest) -> Result<PlayerRespons
             i32::from(request.starting11),
         ],
     )
-    .map_err(CreateError::Database)?;
+    .map_err(|e| match e {
+        rusqlite::Error::SqliteFailure(err, _)
+            if err.code == rusqlite::ErrorCode::ConstraintViolation =>
+        {
+            CreateError::DuplicateSquadNumber
+        }
+        _ => CreateError::Database(e),
+    })?;
 
     get_by_id(conn, &new_id)
         .map_err(CreateError::Database)?

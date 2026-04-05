@@ -2,48 +2,16 @@
 // Following Rust conventions: integration tests go in tests/ directory
 // Uses in-memory SQLite seeded with the full Argentina 2022 World Cup squad.
 
-use rust_samples_rocket_restful::models::player::PlayerRequest;
+mod common;
+
 use rust_samples_rocket_restful::services::player_service::{self, CreateError, UpdateError};
-use rust_samples_rocket_restful::state::player_collection::initialize_test_database;
-
-// Test Fixture: Giovani Lo Celso — squad 27, reserved for POST (create) and DELETE tests.
-// Lo Celso was in Argentina's preliminary squad for Qatar 2022 before injury.
-// Squad 27 sits outside the seeded 1–26 range, so creation never conflicts with seed data.
-fn player_request_for_creation() -> PlayerRequest {
-    PlayerRequest {
-        first_name: "Giovani".to_string(),
-        middle_name: "".to_string(),
-        last_name: "Lo Celso".to_string(),
-        date_of_birth: "1996-07-09T00:00:00.000Z".to_string(),
-        squad_number: 27,
-        position: "Central Midfield".to_string(),
-        abbr_position: "CM".to_string(),
-        team: "Real Betis Balompié".to_string(),
-        league: "La Liga".to_string(),
-        starting11: false,
-    }
-}
-
-// Test Fixture: Emiliano Martínez - Used for PUT (update) tests
-// squad_number 23 matches the seeded Damián Martínez (squad_number: 23)
-fn player_request_for_update() -> PlayerRequest {
-    PlayerRequest {
-        first_name: "Emiliano".to_string(),
-        middle_name: "".to_string(),
-        last_name: "Martínez".to_string(),
-        date_of_birth: "1992-09-02T00:00:00.000Z".to_string(),
-        squad_number: 23,
-        position: "Goalkeeper".to_string(),
-        abbr_position: "GK".to_string(),
-        team: "Aston Villa FC".to_string(),
-        league: "Premier League".to_string(),
-        starting11: true,
-    }
-}
+use rust_samples_rocket_restful::state::player_collection::{
+    initialize_empty_test_database, initialize_test_database,
+};
 
 // GET /players/ ---------------------------------------------------------------
 
-// GET /players/ returns 200 OK
+// GET /players/ returns all 26 players
 #[test]
 fn test_request_get_players_all_response_body_players() {
     // Arrange
@@ -59,9 +27,6 @@ fn test_request_get_players_all_response_body_players() {
     }
 }
 
-// Seed UUID for Lionel Messi — matches the value in player_collection.rs
-const SEED_MESSI_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
-
 // GET /players/{uuid} ---------------------------------------------------------
 
 // GET /players/{uuid} with existing UUID returns 200 OK
@@ -70,13 +35,13 @@ fn test_request_get_player_id_existing_response_body_player() {
     // Arrange
     let conn = initialize_test_database();
     // Act
-    let result = player_service::get_by_id(&conn, SEED_MESSI_ID);
+    let result = player_service::get_by_id(&conn, common::SEED_MESSI_ID);
     // Assert
     assert!(result.is_ok());
     let player = result.unwrap();
     assert!(player.is_some());
     let player = player.unwrap();
-    assert_eq!(player.id, SEED_MESSI_ID);
+    assert_eq!(player.id, common::SEED_MESSI_ID);
     assert_eq!(player.first_name, "Lionel");
     assert_eq!(player.middle_name, "Andrés");
     assert_eq!(player.last_name, "Messi");
@@ -147,7 +112,7 @@ fn test_request_get_player_squadnumber_nonexistent_response_body_none() {
 fn test_request_post_player_body_valid_response_body_created() {
     // Arrange
     let conn = initialize_test_database();
-    let request = player_request_for_creation();
+    let request = common::player_request_for_creation();
     // Act
     let result = player_service::create(&conn, request);
     // Assert
@@ -172,8 +137,8 @@ fn test_request_post_player_body_valid_response_body_created() {
 fn test_request_post_player_body_duplicate_response_status_conflict() {
     // Arrange — insert Lo Celso first, then attempt a second creation
     let conn = initialize_test_database();
-    player_service::create(&conn, player_request_for_creation()).unwrap();
-    let request = player_request_for_creation();
+    player_service::create(&conn, common::player_request_for_creation()).unwrap();
+    let request = common::player_request_for_creation();
     // Act
     let result = player_service::create(&conn, request);
     // Assert
@@ -190,7 +155,7 @@ fn test_request_post_player_body_duplicate_response_status_conflict() {
 fn test_request_post_player_body_valid_response_body_uuid_assigned() {
     // Arrange
     let conn = initialize_test_database();
-    let request = player_request_for_creation();
+    let request = common::player_request_for_creation();
     // Act
     let result = player_service::create(&conn, request);
     // Assert
@@ -200,28 +165,12 @@ fn test_request_post_player_body_valid_response_body_uuid_assigned() {
     assert_eq!(response.id.len(), 36); // UUID v4 string length
 }
 
-// POST /players/ to empty-ish collection (only squad 27 absent) returns 201 Created
+// POST /players/ to empty collection returns 201 Created with a UUID
 #[test]
 fn test_request_post_player_body_valid_empty_collection_response_body_created() {
-    // Arrange — use a fresh in-memory DB with no rows
-    let conn = rusqlite::Connection::open_in_memory().unwrap();
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS players (
-            id TEXT NOT NULL PRIMARY KEY,
-            first_name TEXT NOT NULL,
-            middle_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            date_of_birth TEXT NOT NULL,
-            squad_number INTEGER NOT NULL UNIQUE,
-            position TEXT NOT NULL,
-            abbr_position TEXT NOT NULL,
-            team TEXT NOT NULL,
-            league TEXT NOT NULL,
-            starting11 INTEGER NOT NULL
-        );",
-    )
-    .unwrap();
-    let request = player_request_for_creation();
+    // Arrange — empty in-memory DB (no seed)
+    let conn = initialize_empty_test_database();
+    let request = common::player_request_for_creation();
     // Act
     let result = player_service::create(&conn, request);
     // Assert
@@ -241,7 +190,7 @@ fn test_request_put_player_squadnumber_existing_body_valid_response_body_updated
     let original = player_service::get_by_squad_number(&conn, 23)
         .unwrap()
         .unwrap();
-    let request = player_request_for_update();
+    let request = common::player_request_for_update();
     // Act
     let result = player_service::update(&conn, 23, request);
     // Assert
@@ -265,7 +214,7 @@ fn test_request_put_player_squadnumber_existing_body_valid_response_body_updated
 fn test_request_put_player_squadnumber_nonexistent_body_valid_response_status_not_found() {
     // Arrange
     let conn = initialize_test_database();
-    let request = player_request_for_update();
+    let request = common::player_request_for_update();
     // Act
     let result = player_service::update(&conn, 999, request);
     // Assert
@@ -276,10 +225,9 @@ fn test_request_put_player_squadnumber_nonexistent_body_valid_response_status_no
 // PUT /players/squadnumber/{squad_number} preserves squad number from the route param
 #[test]
 fn test_request_put_player_squadnumber_existing_body_squad_number_immutable() {
-    // Arrange
+    // Arrange — body carries squadNumber 99; route param (23) must win
     let conn = initialize_test_database();
-    let mut request = player_request_for_update();
-    request.squad_number = 99; // attempt to change squad number via body
+    let request = common::player_request_for_update(); // squad_number = 99 in body
     // Act
     let result = player_service::update(&conn, 23, request);
     // Assert
@@ -295,7 +243,7 @@ fn test_request_put_player_squadnumber_existing_body_squad_number_immutable() {
 fn test_request_delete_player_squadnumber_existing_response_status_ok() {
     // Arrange — insert Lo Celso (squad 27) first, then delete by squad number
     let conn = initialize_test_database();
-    player_service::create(&conn, player_request_for_creation()).unwrap();
+    player_service::create(&conn, common::player_request_for_creation()).unwrap();
     // Act
     let result = player_service::delete(&conn, 27);
     // Assert
@@ -345,23 +293,7 @@ fn test_request_delete_player_squadnumber_existing_last_response_status_ok() {
 #[test]
 fn test_request_delete_player_squadnumber_nonexistent_empty_collection_response_status_not_found() {
     // Arrange — empty in-memory DB (no seed)
-    let conn = rusqlite::Connection::open_in_memory().unwrap();
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS players (
-            id TEXT NOT NULL PRIMARY KEY,
-            first_name TEXT NOT NULL,
-            middle_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            date_of_birth TEXT NOT NULL,
-            squad_number INTEGER NOT NULL UNIQUE,
-            position TEXT NOT NULL,
-            abbr_position TEXT NOT NULL,
-            team TEXT NOT NULL,
-            league TEXT NOT NULL,
-            starting11 INTEGER NOT NULL
-        );",
-    )
-    .unwrap();
+    let conn = initialize_empty_test_database();
     // Act
     let result = player_service::delete(&conn, 10);
     // Assert
