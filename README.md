@@ -18,6 +18,7 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 - [API Reference](#api-reference)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
+- [Containers](#containers)
 - [Testing](#testing)
 - [Command Summary](#command-summary)
 - [Contributing](#contributing)
@@ -223,25 +224,25 @@ The server will start on `http://localhost:9000`.
 # Get all players
 curl http://localhost:9000/players
 
-# Get player by ID
-curl http://localhost:9000/players/1
+# Get player by UUID (Lionel Messi)
+curl http://localhost:9000/players/acc433bf-d505-51fe-831e-45eb44c4d43c
 
 # Get player by squad number
 curl http://localhost:9000/players/squadnumber/10
 
-# Create a new player
+# Create a new player (Giovani Lo Celso — squad 27)
 curl -X POST http://localhost:9000/players \
   -H "Content-Type: application/json" \
   -d '{
-    "firstName": "Test First Name",
+    "firstName": "Giovani",
     "middleName": "",
-    "lastName": "Test Last Name",
-    "dateOfBirth": "2000-01-01",
-    "squadNumber": 99,
-    "position": "Test Position",
-    "abbrPosition": "AP",
-    "team": "Test Team",
-    "league": "Test League",
+    "lastName": "Lo Celso",
+    "dateOfBirth": "1996-07-09T00:00:00.000Z",
+    "squadNumber": 27,
+    "position": "Central Midfield",
+    "abbrPosition": "CM",
+    "team": "Real Betis Balompié",
+    "league": "La Liga",
     "starting11": false
   }'
 
@@ -252,17 +253,39 @@ curl -X PUT http://localhost:9000/players/squadnumber/23 \
     "firstName": "Emiliano",
     "middleName": "",
     "lastName": "Martínez",
-    "dateOfBirth": "1992-09-02",
+    "dateOfBirth": "1992-09-02T00:00:00.000Z",
     "squadNumber": 23,
     "position": "Goalkeeper",
     "abbrPosition": "GK",
-    "team": "Aston Villa",
+    "team": "Aston Villa FC",
     "league": "Premier League",
     "starting11": true
   }'
 
-# Delete a player
-curl -X DELETE http://localhost:9000/players/squadnumber/17
+# Delete a player (requires Create to have been run first)
+curl -X DELETE http://localhost:9000/players/squadnumber/27
+```
+
+## Containers
+
+### Build and start
+
+```bash
+docker compose up --build
+```
+
+The API will be available at `http://localhost:9000`. On first start the entrypoint script seeds the SQLite database into a named volume (`rust-samples-rocket-restful_storage`); subsequent starts reuse the existing data.
+
+### Stop and remove containers
+
+```bash
+docker compose down
+```
+
+### Remove containers and volume
+
+```bash
+docker compose down --volumes
 ```
 
 ## Testing

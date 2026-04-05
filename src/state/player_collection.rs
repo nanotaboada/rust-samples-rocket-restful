@@ -31,8 +31,17 @@ pub type PlayerCollection = Mutex<Connection>;
 /// which is then wrapped in a [`PlayerCollection`] (i.e. `Mutex`) before
 /// being handed to Rocket's state management via `.manage()`.
 pub fn initialize_database() -> Connection {
-    std::fs::create_dir_all("storage").expect("Failed to create storage directory");
-    let mut conn = Connection::open("storage/players-sqlite3.db").expect("Failed to open database");
+    let path = std::env::var("STORAGE_PATH")
+        .ok()
+        .and_then(|v| {
+            let t = v.trim().to_string();
+            if t.is_empty() { None } else { Some(t) }
+        })
+        .unwrap_or_else(|| "storage/players-sqlite3.db".to_string());
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        std::fs::create_dir_all(parent).expect("Failed to create storage directory");
+    }
+    let mut conn = Connection::open(&path).expect("Failed to open database");
     conn.trace(Some(|stmt| println!("[SQL] {stmt}")));
     create_schema(&conn);
     if is_empty(&conn) {

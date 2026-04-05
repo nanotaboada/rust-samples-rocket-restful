@@ -20,10 +20,12 @@
     // Version Control & Collaboration
     "github.vscode-pull-request-github",     // GitHub Pull Requests - Manage pull requests and issues
     "github.vscode-github-actions",          // GitHub Actions - Manage CI/CD workflows
-    "github.remotehub",                      // Remote Repositories - Browse and edit GitHub repos remotely
-    "ms-vscode.remote-repositories",         // Remote Repositories - Remote repository infrastructure
+    "github.remotehub",                      // GitHub Repositories - Remotely browse and edit any GitHub repository
     "ms-vscode.azure-repos",                 // Azure Repos - Azure DevOps repository support
     "codezombiech.gitignore",                // gitignore - Generate .gitignore files
+
+    // HTTP & API Testing
+    "humao.rest-client",                     // REST Client - Run HTTP requests directly from .rest files
 
     // Containers & Configuration
     "ms-azuretools.vscode-containers",       // Container Tools - Docker and container management
