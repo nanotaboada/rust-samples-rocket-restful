@@ -1,6 +1,6 @@
 # 🧪 RESTful API with Rust and Rocket
 
-[![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust.yml)
+[![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-ci.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg)](https://opensource.org/licenses/MIT)
 ![Dependabot](https://img.shields.io/badge/Dependabot-contributing-025E8C?logo=dependabot&logoColor=white&labelColor=181818)
 ![Copilot](https://img.shields.io/badge/Copilot-contributing-8662C5?logo=githubcopilot&logoColor=white&labelColor=181818)
@@ -19,6 +19,7 @@ Proof of Concept for a RESTful API built with [Rust](https://www.rust-lang.org/)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Containers](#containers)
+- [Releases](#releases)
 - [Testing](#testing)
 - [Command Summary](#command-summary)
 - [Contributing](#contributing)
@@ -287,6 +288,99 @@ docker compose down
 ```bash
 docker compose down --volumes
 ```
+
+## Releases
+
+This project uses Ballon d'Or nominees as release codenames 🏅, inspired by Ubuntu, Android, and macOS naming conventions.
+
+### Release Naming Convention
+
+Releases follow the pattern: `v{SEMVER}-{NOMINEE}` (e.g., `v1.0.0-benzema`)
+
+- **Semantic Version**: Standard versioning (MAJOR.MINOR.PATCH)
+- **Nominee Name**: Alphabetically ordered codename from the [Ballon d'Or nominees list](CHANGELOG.md#ballon-dor-nominees-)
+
+### Create a Release
+
+To create a new release, follow this workflow:
+
+#### 1. Create a Release Branch
+
+Branch protection prevents direct pushes to `master`, so all release prep goes through a PR:
+
+```bash
+git checkout master && git pull
+git checkout -b release/vX.Y.Z-nominee
+```
+
+#### 2. Update CHANGELOG.md
+
+Move items from `[Unreleased]` to a new release section in [CHANGELOG.md](CHANGELOG.md), then commit and push the branch:
+
+```bash
+# Move items from [Unreleased] to new release section
+# Example: [2.0.0 - Benzema] - 2026-XX-XX
+git add CHANGELOG.md
+git commit -m "docs(changelog): prepare release notes for vX.Y.Z-nominee"
+git push origin release/vX.Y.Z-nominee
+```
+
+#### 3. Merge the Release PR
+
+Open a pull request from `release/vX.Y.Z-nominee` into `master` and merge it. The tag must be created **after** the merge so it points to the correct commit on `master`.
+
+#### 4. Create and Push Tag
+
+After the PR is merged, pull `master` and create the annotated tag:
+
+```bash
+git checkout master && git pull
+git tag -a vX.Y.Z-nominee -m "Release X.Y.Z - Nominee"
+git push origin vX.Y.Z-nominee
+```
+
+Example:
+
+```bash
+git tag -a v1.0.0-benzema -m "Release 1.0.0 - Benzema"
+git push origin v1.0.0-benzema
+```
+
+#### 5. Automated CD Workflow
+
+This triggers the CD workflow which automatically:
+
+1. Validates the nominee name
+2. Builds and tests the project
+3. Publishes Docker images to GitHub Container Registry with three tags
+4. Creates a GitHub Release with auto-generated changelog from commits
+
+#### Pre-Release Checklist
+
+- [ ] Release branch created from `master`
+- [ ] `CHANGELOG.md` updated with release notes
+- [ ] Changes committed and pushed on the release branch
+- [ ] Release PR merged into `master`
+- [ ] Tag created with correct format: `vX.Y.Z-nominee`
+- [ ] Nominee name is valid (A-Z from the [Ballon d'Or nominees list](CHANGELOG.md#ballon-dor-nominees-))
+- [ ] Tag pushed to trigger CD workflow
+
+### Pull Docker Images
+
+Each release publishes multiple tags for flexibility:
+
+```bash
+# By semantic version (recommended for production)
+docker pull ghcr.io/nanotaboada/rust-samples-rocket-restful:1.0.0
+
+# By nominee name (memorable alternative)
+docker pull ghcr.io/nanotaboada/rust-samples-rocket-restful:benzema
+
+# Latest release
+docker pull ghcr.io/nanotaboada/rust-samples-rocket-restful:latest
+```
+
+> See [CHANGELOG.md](CHANGELOG.md) for the complete Ballon d'Or nominees list (A-Z) and release history.
 
 ## Testing
 
