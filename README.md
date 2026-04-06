@@ -240,7 +240,6 @@ cargo test -- --nocapture
 | `docker compose down -v` | Stop and remove Docker volume |
 | **AI Commands** | |
 | `/pre-commit` | Runs linting, tests, and quality checks before committing |
-| `/pre-release` | Runs pre-release validation workflow |
 
 ## Legal
 
