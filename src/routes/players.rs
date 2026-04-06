@@ -122,7 +122,7 @@ fn create_player(
 /// JSON object with complete player data
 ///
 /// # Returns
-/// * `200 OK` - JSON object with updated player data
+/// * `204 No Content` - Player updated successfully, no body
 /// * `404 Not Found` - If no player has that squad number
 ///
 /// # Example
@@ -132,11 +132,11 @@ fn update_player(
     squad_number: u32,
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
-) -> Result<Json<PlayerResponse>, Status> {
+) -> Result<Status, Status> {
     let conn = players.lock().map_err(|_| Status::InternalServerError)?;
 
     match player_service::update(&conn, squad_number, player_request.into_inner()) {
-        Ok(response) => Ok(Json(response)),
+        Ok(_) => Ok(Status::NoContent),
         Err(UpdateError::NotFound) => Err(Status::NotFound),
         Err(UpdateError::Database(_)) => Err(Status::InternalServerError),
     }
