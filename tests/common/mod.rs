@@ -8,8 +8,11 @@
 
 use rust_samples_rocket_restful::models::player::PlayerRequest;
 
-// Seed UUID for Lionel Messi — matches the value seeded in player_collection.rs
-pub const SEED_MESSI_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
+// UUID of an existing player (Lionel Messi, squad 10) — matches the value seeded in player_collection.rs
+pub const EXISTING_PLAYER_ID: &str = "acc433bf-d505-51fe-831e-45eb44c4d43c";
+
+// A well-formed UUID guaranteed not to exist in any seeded dataset
+pub const NONEXISTENT_PLAYER_ID: &str = "00000000-0000-0000-0000-000000000000";
 
 // Test Fixture: Giovani Lo Celso — squad 27, reserved for POST (create) and DELETE tests.
 // Lo Celso was in Argentina's preliminary squad for Qatar 2022 before injury.

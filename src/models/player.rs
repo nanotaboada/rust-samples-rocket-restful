@@ -21,6 +21,8 @@
 //!   camelCase JSON keys (e.g. `first_name` → `"firstName"`)
 
 use rocket::serde::{Deserialize, Serialize};
+use rocket_okapi::okapi::schemars;
+use rocket_okapi::okapi::schemars::JsonSchema;
 
 /// Inbound payload for creating or updating a player.
 ///
@@ -35,7 +37,7 @@ use rocket::serde::{Deserialize, Serialize};
 /// This struct only needs `Deserialize` because it is only ever read from JSON.
 /// `Clone` and `Serialize` are omitted to keep the type minimal and make
 /// incorrect usage a compile-time error.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerRequest {
     pub first_name: String,
@@ -58,7 +60,7 @@ pub struct PlayerRequest {
 /// ## Rust note: missing `Deserialize`
 /// This struct only needs `Serialize` because it is only ever written to JSON.
 /// `Deserialize` is omitted since we never parse a response back into Rust.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerResponse {
     pub id: String,

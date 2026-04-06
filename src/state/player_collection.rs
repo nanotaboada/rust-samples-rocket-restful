@@ -17,7 +17,7 @@ use std::sync::Mutex;
 /// ## Rust note: locking and `MutexGuard`
 /// Before accessing the inner `Connection`, callers must call `.lock()`:
 /// ```ignore
-/// let conn = state.lock().map_err(|_| Status::InternalServerError)?;
+/// let connection = state.lock().map_err(|_| Status::InternalServerError)?;
 /// ```
 /// `lock()` blocks the current thread until no other thread holds the lock,
 /// then returns a `MutexGuard<Connection>`. The guard releases the lock
@@ -41,23 +41,23 @@ pub fn initialize_database() -> Connection {
     if let Some(parent) = std::path::Path::new(&path).parent() {
         std::fs::create_dir_all(parent).expect("Failed to create storage directory");
     }
-    let mut conn = Connection::open(&path).expect("Failed to open database");
-    conn.trace(Some(|stmt| println!("[SQL] {stmt}")));
-    create_schema(&conn);
-    if is_empty(&conn) {
-        seed(&conn);
+    let mut connection = Connection::open(&path).expect("Failed to open database");
+    connection.trace(Some(|statement| println!("[SQL] {statement}")));
+    create_schema(&connection);
+    if is_empty(&connection) {
+        seed(&connection);
     }
-    conn
+    connection
 }
 
 /// Opens an in-memory SQLite database, creates the schema, and seeds the
 /// 26-player dataset. Used exclusively in tests.
 #[allow(dead_code)]
 pub fn initialize_test_database() -> Connection {
-    let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
-    create_schema(&conn);
-    seed(&conn);
-    conn
+    let connection = Connection::open_in_memory().expect("Failed to open in-memory database");
+    create_schema(&connection);
+    seed(&connection);
+    connection
 }
 
 /// Opens an in-memory SQLite database and creates the schema with no rows.
@@ -67,15 +67,16 @@ pub fn initialize_test_database() -> Connection {
 /// with production via the shared `create_schema` helper.
 #[allow(dead_code)]
 pub fn initialize_empty_test_database() -> Connection {
-    let conn = Connection::open_in_memory().expect("Failed to open in-memory database");
-    create_schema(&conn);
-    conn
+    let connection = Connection::open_in_memory().expect("Failed to open in-memory database");
+    create_schema(&connection);
+    connection
 }
 
 /// Creates the `players` table if it does not already exist.
-fn create_schema(conn: &Connection) {
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS players (
+fn create_schema(connection: &Connection) {
+    connection
+        .execute_batch(
+            "CREATE TABLE IF NOT EXISTS players (
             id            TEXT    NOT NULL PRIMARY KEY,
             first_name    TEXT    NOT NULL,
             middle_name   TEXT    NOT NULL,
@@ -88,13 +89,13 @@ fn create_schema(conn: &Connection) {
             league        TEXT    NOT NULL,
             starting11    INTEGER NOT NULL CHECK (starting11 IN (0, 1))
         );",
-    )
-    .expect("Failed to create schema");
+        )
+        .expect("Failed to create schema");
 }
 
 /// Returns `true` when the players table contains no rows.
-fn is_empty(conn: &Connection) -> bool {
-    let count: i64 = conn
+fn is_empty(connection: &Connection) -> bool {
+    let count: i64 = connection
         .query_row("SELECT COUNT(*) FROM players", [], |row| row.get(0))
         .unwrap_or(0);
     count == 0
@@ -115,7 +116,7 @@ type PlayerRow<'a> = (
 );
 
 /// Inserts the Argentina 2022 World Cup squad (26 players).
-fn seed(conn: &Connection) {
+fn seed(connection: &Connection) {
     let players: &[PlayerRow<'_>] = &[
         (
             "01772c59-43f0-5d85-b913-c78e4e281452",
@@ -471,7 +472,7 @@ fn seed(conn: &Connection) {
         starting11,
     ) in players
     {
-        conn.execute(
+        connection.execute(
             "INSERT INTO players (id, first_name, middle_name, last_name, date_of_birth, squad_number, position, abbr_position, team, league, starting11)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             rusqlite::params![id, first_name, middle_name, last_name, date_of_birth, squad_number, position, abbr_position, team, league, starting11],
