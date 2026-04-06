@@ -35,13 +35,13 @@ fn test_request_get_player_id_existing_response_body_player() {
     // Arrange
     let connection = initialize_test_database();
     // Act
-    let result = player_service::get_by_id(&connection, common::SEED_MESSI_ID);
+    let result = player_service::get_by_id(&connection, common::EXISTING_PLAYER_ID);
     // Assert
     assert!(result.is_ok());
     let player = result.unwrap();
     assert!(player.is_some());
     let player = player.unwrap();
-    assert_eq!(player.id, common::SEED_MESSI_ID);
+    assert_eq!(player.id, common::EXISTING_PLAYER_ID);
     assert_eq!(player.first_name, "Lionel");
     assert_eq!(player.middle_name, "Andrés");
     assert_eq!(player.last_name, "Messi");
@@ -60,7 +60,7 @@ fn test_request_get_player_id_nonexistent_response_body_none() {
     // Arrange
     let connection = initialize_test_database();
     // Act
-    let result = player_service::get_by_id(&connection, "00000000-0000-0000-0000-000000000000");
+    let result = player_service::get_by_id(&connection, common::NONEXISTENT_PLAYER_ID);
     // Assert
     assert!(result.is_ok());
     assert!(result.unwrap().is_none());

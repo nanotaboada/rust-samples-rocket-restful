@@ -29,3 +29,10 @@ pub fn get_routes_and_docs(
 ) -> (Vec<rocket::Route>, rocket_okapi::okapi::openapi3::OpenApi) {
     openapi_get_routes_spec![settings: health]
 }
+
+/// Returns the health route without OpenAPI types for callers that do not need
+/// documentation (e.g. lightweight test setups).
+#[allow(dead_code)]
+pub fn routes() -> Vec<rocket::Route> {
+    get_routes_and_docs(&rocket_okapi::settings::OpenApiSettings::default()).0
+}

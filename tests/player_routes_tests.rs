@@ -7,7 +7,6 @@ mod common;
 
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
-use rocket_okapi::settings::OpenApiSettings;
 use rust_samples_rocket_restful::{
     routes,
     state::player_collection::{PlayerCollection, initialize_test_database},
@@ -16,11 +15,10 @@ use rust_samples_rocket_restful::{
 // Full 26-player seed — used by all tests except POST creation
 fn setup_client() -> Client {
     let database = PlayerCollection::new(initialize_test_database());
-    let settings = OpenApiSettings::default();
     let rocket = rocket::build()
         .manage(database)
-        .mount("/", routes::health::get_routes_and_docs(&settings).0)
-        .mount("/", routes::players::get_routes_and_docs(&settings).0);
+        .mount("/", routes::health::routes())
+        .mount("/", routes::players::routes());
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
@@ -34,11 +32,10 @@ fn setup_client_for_post() -> Client {
     // seed, so this is a no-op — but kept for symmetry with the old Vec approach.
     player_service::delete(&connection, 27).ok();
     let database = PlayerCollection::new(connection);
-    let settings = OpenApiSettings::default();
     let rocket = rocket::build()
         .manage(database)
-        .mount("/", routes::health::get_routes_and_docs(&settings).0)
-        .mount("/", routes::players::get_routes_and_docs(&settings).0);
+        .mount("/", routes::health::routes())
+        .mount("/", routes::players::routes());
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
@@ -73,6 +70,31 @@ fn player_request_for_update_json() -> serde_json::Value {
         "league": "Premier League",
         "starting11": true
     })
+}
+
+// GET /openapi.json -----------------------------------------------------------
+
+// GET /openapi.json returns 200 OK with a valid OpenAPI 3 payload
+#[test]
+fn test_request_get_openapi_json_response_status_ok() {
+    // Arrange
+    use rocket_okapi::mount_endpoints_and_merged_docs;
+    use rocket_okapi::settings::OpenApiSettings;
+    let database = PlayerCollection::new(initialize_test_database());
+    let settings = OpenApiSettings::default();
+    let mut server = rocket::build().manage(database);
+    mount_endpoints_and_merged_docs! {
+        server, "/".to_owned(), settings,
+        "/" => routes::health::get_routes_and_docs(&settings),
+        "/" => routes::players::get_routes_and_docs(&settings),
+    };
+    let client = Client::tracked(server).expect("valid rocket instance");
+    // Act
+    let response = client.get("/openapi.json").dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::Ok);
+    let body = response.into_string().unwrap();
+    assert!(body.contains("\"openapi\""));
 }
 
 // GET /health -----------------------------------------------------------------
@@ -139,12 +161,12 @@ fn test_request_get_player_by_id_existing_response_status_ok() {
     let client = setup_client();
     // Act
     let response = client
-        .get(format!("/players/{}", common::SEED_MESSI_ID))
+        .get(format!("/players/{}", common::EXISTING_PLAYER_ID))
         .dispatch();
     // Assert
     assert_eq!(response.status(), Status::Ok);
     let body: serde_json::Value = serde_json::from_str(&response.into_string().unwrap()).unwrap();
-    assert_eq!(body["id"], common::SEED_MESSI_ID);
+    assert_eq!(body["id"], common::EXISTING_PLAYER_ID);
     assert_eq!(body["firstName"], "Lionel");
     assert_eq!(body["middleName"], "Andrés");
     assert_eq!(body["lastName"], "Messi");
