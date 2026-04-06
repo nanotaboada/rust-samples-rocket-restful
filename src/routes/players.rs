@@ -6,14 +6,15 @@
 //! ## Key design
 //!
 //! | Concern         | Key used        | Notes                              |
-//! |-----------------|-----------------|-------------------------------------|
+//! |-----------------|-----------------|------------------------------------|
 //! | Surrogate key   | UUID (`id`)     | Admin route: `GET /players/{uuid}` |
 //! | Natural key     | `squad_number`  | All mutation routes use this       |
 
 use crate::models::player::{PlayerRequest, PlayerResponse};
 use crate::services::player_service::{self, CreateError, UpdateError};
 use crate::state::player_collection::PlayerCollection;
-use rocket::{State, delete, get, http::Status, post, put, routes, serde::json::Json};
+use rocket::{State, delete, get, http::Status, post, put, serde::json::Json};
+use rocket_okapi::{openapi, openapi_get_routes_spec};
 
 /// GET /players - Retrieves all players in the collection.
 ///
@@ -24,10 +25,11 @@ use rocket::{State, delete, get, http::Status, post, put, routes, serde::json::J
 /// ```json
 /// [{"id": "f10f398d-b2ff-40aa-acac-51f58d129bc7", "firstName": "Lionel", "squadNumber": 10, ...}, ...]
 /// ```
+#[openapi(tag = "Players")]
 #[get("/players")]
 fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerResponse>>, Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_all(&conn)
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    player_service::get_all(&connection)
         .map(Json)
         .map_err(|_| Status::InternalServerError)
 }
@@ -43,13 +45,14 @@ fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerR
 ///
 /// # Example
 /// `GET /players/f10f398d-b2ff-40aa-acac-51f58d129bc7` returns Messi's data
+#[openapi(tag = "Players")]
 #[get("/players/<id>")]
 fn get_player_by_id(
     id: String,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_by_id(&conn, &id)
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    player_service::get_by_id(&connection, &id)
         .map_err(|_| Status::InternalServerError)?
         .map(Json)
         .ok_or(Status::NotFound)
@@ -66,13 +69,14 @@ fn get_player_by_id(
 ///
 /// # Example
 /// `GET /players/squadnumber/10` finds the player wearing jersey #10
+#[openapi(tag = "Players")]
 #[get("/players/squadnumber/<squad_number>")]
 fn get_player_by_squad_number(
     squad_number: u32,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_by_squad_number(&conn, squad_number)
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    player_service::get_by_squad_number(&connection, squad_number)
         .map_err(|_| Status::InternalServerError)?
         .map(Json)
         .ok_or(Status::NotFound)
@@ -95,14 +99,15 @@ fn get_player_by_squad_number(
 /// ```json
 /// {"firstName": "Diego", "squadNumber": 10, ...}
 /// ```
+#[openapi(tag = "Players")]
 #[post("/players", data = "<player_request>")]
 fn create_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<(Status, Json<PlayerResponse>), Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::create(&conn, player_request.into_inner()) {
+    match player_service::create(&connection, player_request.into_inner()) {
         Ok(response) => Ok((Status::Created, Json(response))),
         Err(CreateError::DuplicateSquadNumber) => Err(Status::Conflict),
         Err(CreateError::Database(_)) => Err(Status::InternalServerError),
@@ -127,15 +132,16 @@ fn create_player(
 ///
 /// # Example
 /// `PUT /players/squadnumber/10` with JSON body updates the player wearing jersey #10
+#[openapi(tag = "Players")]
 #[put("/players/squadnumber/<squad_number>", data = "<player_request>")]
 fn update_player(
     squad_number: u32,
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<Status, Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::update(&conn, squad_number, player_request.into_inner()) {
+    match player_service::update(&connection, squad_number, player_request.into_inner()) {
         Ok(_) => Ok(Status::NoContent),
         Err(UpdateError::NotFound) => Err(Status::NotFound),
         Err(UpdateError::Database(_)) => Err(Status::InternalServerError),
@@ -152,11 +158,12 @@ fn update_player(
 /// # Returns
 /// * `204 No Content` - Player successfully deleted (no response body)
 /// * `404 Not Found` - If no player has that squad number
+#[openapi(tag = "Players")]
 #[delete("/players/squadnumber/<squad_number>")]
 fn delete_player(squad_number: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
-    let conn = players.lock().map_err(|_| Status::InternalServerError)?;
+    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::delete(&conn, squad_number) {
+    match player_service::delete(&connection, squad_number) {
         Ok(true) => Ok(Status::NoContent),
         Ok(false) => Err(Status::NotFound),
         Err(_) => Err(Status::InternalServerError),
@@ -165,15 +172,20 @@ fn delete_player(squad_number: u32, players: &State<PlayerCollection>) -> Result
 
 /// Returns all player-related routes for mounting in Rocket.
 ///
-/// Collects all player endpoint handlers into a vector for registration
-/// with Rocket's routing system.
+/// Returns all player routes and their OpenAPI spec for mounting.
 ///
 /// # Usage
 /// ```ignore
-/// rocket::build().mount("/", routes::players::routes())
+/// mount_endpoints_and_merged_docs! {
+///     server, "/".to_owned(), settings,
+///     "/" => routes::players::get_routes_and_docs(&settings),
+/// }
 /// ```
-pub fn routes() -> Vec<rocket::Route> {
-    routes![
+pub fn get_routes_and_docs(
+    settings: &rocket_okapi::settings::OpenApiSettings,
+) -> (Vec<rocket::Route>, rocket_okapi::okapi::openapi3::OpenApi) {
+    openapi_get_routes_spec![
+        settings:
         get_all_players,
         get_player_by_id,
         get_player_by_squad_number,

@@ -19,6 +19,10 @@ mod routes;
 mod services;
 mod state;
 
+use rocket_okapi::mount_endpoints_and_merged_docs;
+use rocket_okapi::okapi::openapi3::{Info, OpenApi};
+use rocket_okapi::settings::OpenApiSettings;
+use rocket_okapi::swagger_ui::{SwaggerUIConfig, make_swagger_ui};
 use state::player_collection::{PlayerCollection, initialize_database};
 
 /// Configures and launches the Rocket web server.
@@ -32,9 +36,32 @@ use state::player_collection::{PlayerCollection, initialize_database};
 /// type, avoiding a verbose type annotation.
 #[launch]
 fn rocket() -> _ {
-    let db = PlayerCollection::new(initialize_database());
-    rocket::build()
-        .manage(db)
-        .mount("/", routes::health::routes())
-        .mount("/", routes::players::routes())
+    let database = PlayerCollection::new(initialize_database());
+    let settings = OpenApiSettings::default();
+
+    let mut server = rocket::build().manage(database).mount(
+        "/swagger-ui/",
+        make_swagger_ui(&SwaggerUIConfig {
+            url: "../openapi.json".to_owned(),
+            ..Default::default()
+        }),
+    );
+
+    mount_endpoints_and_merged_docs! {
+        server, "/".to_owned(), settings,
+        "/" => (vec![], OpenApi {
+            openapi: "3.0.0".to_owned(),
+            info: Info {
+                title: "Players REST API".to_owned(),
+                description: Some("Sample REST API with Rust and Rocket".to_owned()),
+                version: env!("CARGO_PKG_VERSION").to_owned(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }),
+        "/" => routes::health::get_routes_and_docs(&settings),
+        "/" => routes::players::get_routes_and_docs(&settings),
+    };
+
+    server
 }

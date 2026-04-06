@@ -7,6 +7,7 @@ mod common;
 
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
+use rocket_okapi::settings::OpenApiSettings;
 use rust_samples_rocket_restful::{
     routes,
     state::player_collection::{PlayerCollection, initialize_test_database},
@@ -14,11 +15,12 @@ use rust_samples_rocket_restful::{
 
 // Full 26-player seed — used by all tests except POST creation
 fn setup_client() -> Client {
-    let db = PlayerCollection::new(initialize_test_database());
+    let database = PlayerCollection::new(initialize_test_database());
+    let settings = OpenApiSettings::default();
     let rocket = rocket::build()
-        .manage(db)
-        .mount("/", routes::health::routes())
-        .mount("/", routes::players::routes());
+        .manage(database)
+        .mount("/", routes::health::get_routes_and_docs(&settings).0)
+        .mount("/", routes::players::get_routes_and_docs(&settings).0);
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
@@ -27,15 +29,16 @@ fn setup_client() -> Client {
 fn setup_client_for_post() -> Client {
     use rust_samples_rocket_restful::services::player_service;
 
-    let conn = initialize_test_database();
+    let connection = initialize_test_database();
     // Delete squad 27 if it was somehow seeded; Lo Celso is not in the 26-player
     // seed, so this is a no-op — but kept for symmetry with the old Vec approach.
-    player_service::delete(&conn, 27).ok();
-    let db = PlayerCollection::new(conn);
+    player_service::delete(&connection, 27).ok();
+    let database = PlayerCollection::new(connection);
+    let settings = OpenApiSettings::default();
     let rocket = rocket::build()
-        .manage(db)
-        .mount("/", routes::health::routes())
-        .mount("/", routes::players::routes());
+        .manage(database)
+        .mount("/", routes::health::get_routes_and_docs(&settings).0)
+        .mount("/", routes::players::get_routes_and_docs(&settings).0);
     Client::tracked(rocket).expect("valid rocket instance")
 }
 
