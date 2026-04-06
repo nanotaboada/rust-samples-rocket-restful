@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `rocket_okapi` integration: OpenAPI 3 spec auto-generated from route annotations; Swagger UI at `/swagger-ui/`, raw spec at `/openapi.json` (#39)
 - `Dockerfile` (multi-stage: `rust:1.88-slim-bookworm` builder → `debian:bookworm-slim` runtime), `compose.yaml`, `.dockerignore`, `scripts/entrypoint.sh`, and `scripts/healthcheck.sh` for container support (#40)
 - `rest/players.rest` with sample HTTP requests for all endpoints, compatible with VS Code REST Client and JetBrains HTTP Client (#40)
 - `humao.rest-client` recommendation added to `.vscode/extensions.json` (#40)
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `PUT /players/squadnumber/{squad_number}` now returns `204 No Content` with no body on success (#63)
+- Rename all `db` / `conn` / `stmt` abbreviations to `database` / `connection` / `statement` across `src/` and `tests/` (#39)
 - `initialize_database()` reads `STORAGE_PATH` environment variable for the database path, falling back to `storage/players-sqlite3.db` (#40)
 - README: added **Containers** section (`docker compose up/down`), fixed `Test the API` curl examples to use correct UUID and fixture data (#40)
 - SQLite persistence via `rusqlite` (bundled feature); database stored at `storage/players-sqlite3.db`

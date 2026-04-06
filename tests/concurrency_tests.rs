@@ -18,15 +18,15 @@ use std::thread;
 #[test]
 fn test_concurrent_reads_all_players_no_data_races() {
     // Arrange
-    let db = Arc::new(PlayerCollection::new(initialize_test_database()));
+    let database = Arc::new(PlayerCollection::new(initialize_test_database()));
     let thread_count = 10;
     // Act
     let handles: Vec<_> = (0..thread_count)
         .map(|_| {
-            let db = Arc::clone(&db);
+            let database = Arc::clone(&database);
             thread::spawn(move || {
-                let conn = db.lock().unwrap();
-                player_service::get_all(&conn).unwrap().len()
+                let connection = database.lock().unwrap();
+                player_service::get_all(&connection).unwrap().len()
             })
         })
         .collect();
@@ -41,18 +41,18 @@ fn test_concurrent_reads_all_players_no_data_races() {
 #[test]
 fn test_concurrent_creates_unique_squad_numbers_all_succeed() {
     // Arrange
-    let db = Arc::new(PlayerCollection::new(initialize_test_database()));
+    let database = Arc::new(PlayerCollection::new(initialize_test_database()));
     let squad_numbers = [101u32, 102, 103, 104, 105];
     // Act
     let handles: Vec<_> = squad_numbers
         .iter()
         .map(|&squad_number| {
-            let db = Arc::clone(&db);
+            let database = Arc::clone(&database);
             thread::spawn(move || {
                 let mut request = common::player_request_for_creation();
                 request.squad_number = squad_number;
-                let conn = db.lock().unwrap();
-                player_service::create(&conn, request).is_ok()
+                let connection = database.lock().unwrap();
+                player_service::create(&connection, request).is_ok()
             })
         })
         .collect();
@@ -60,7 +60,9 @@ fn test_concurrent_creates_unique_squad_numbers_all_succeed() {
     // Assert
     assert!(results.iter().all(|&ok| ok));
     assert_eq!(
-        player_service::get_all(&db.lock().unwrap()).unwrap().len(),
+        player_service::get_all(&database.lock().unwrap())
+            .unwrap()
+            .len(),
         31
     );
 }
@@ -71,17 +73,17 @@ fn test_concurrent_creates_unique_squad_numbers_all_succeed() {
 #[test]
 fn test_concurrent_creates_duplicate_squad_number_one_succeeds() {
     // Arrange
-    let db = Arc::new(PlayerCollection::new(initialize_test_database()));
+    let database = Arc::new(PlayerCollection::new(initialize_test_database()));
     let thread_count = 5;
     // Act
     let handles: Vec<_> = (0..thread_count)
         .map(|_| {
-            let db = Arc::clone(&db);
+            let database = Arc::clone(&database);
             thread::spawn(move || {
                 let mut request = common::player_request_for_creation();
                 request.squad_number = 99;
-                let conn = db.lock().unwrap();
-                player_service::create(&conn, request).is_ok()
+                let connection = database.lock().unwrap();
+                player_service::create(&connection, request).is_ok()
             })
         })
         .collect();
@@ -90,7 +92,9 @@ fn test_concurrent_creates_duplicate_squad_number_one_succeeds() {
     let successes = results.iter().filter(|&&ok| ok).count();
     assert_eq!(successes, 1);
     assert_eq!(
-        player_service::get_all(&db.lock().unwrap()).unwrap().len(),
+        player_service::get_all(&database.lock().unwrap())
+            .unwrap()
+            .len(),
         27
     );
 }
@@ -101,24 +105,24 @@ fn test_concurrent_creates_duplicate_squad_number_one_succeeds() {
 #[test]
 fn test_concurrent_mixed_reads_and_writes_no_data_races() {
     // Arrange
-    let db = Arc::new(PlayerCollection::new(initialize_test_database()));
+    let database = Arc::new(PlayerCollection::new(initialize_test_database()));
     let base_squad = 201u32;
     // Act
     let mut handles = vec![];
     for _ in 0..5 {
-        let db = Arc::clone(&db);
+        let database = Arc::clone(&database);
         handles.push(thread::spawn(move || {
-            let conn = db.lock().unwrap();
-            player_service::get_all(&conn).unwrap().len() >= 26
+            let connection = database.lock().unwrap();
+            player_service::get_all(&connection).unwrap().len() >= 26
         }));
     }
     for i in 0..5u32 {
-        let db = Arc::clone(&db);
+        let database = Arc::clone(&database);
         handles.push(thread::spawn(move || {
             let mut request = common::player_request_for_creation();
             request.squad_number = base_squad + i;
-            let conn = db.lock().unwrap();
-            player_service::create(&conn, request).is_ok()
+            let connection = database.lock().unwrap();
+            player_service::create(&connection, request).is_ok()
         }));
     }
     let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();

@@ -49,39 +49,42 @@ fn row_to_response(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayerResponse> 
 }
 
 /// Retrieves all players and converts them to response format.
-pub fn get_all(conn: &Connection) -> Result<Vec<PlayerResponse>, rusqlite::Error> {
-    let mut stmt = conn.prepare(
+pub fn get_all(connection: &Connection) -> Result<Vec<PlayerResponse>, rusqlite::Error> {
+    let mut statement = connection.prepare(
         "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
                 position, abbr_position, team, league, starting11
          FROM players
          ORDER BY squad_number",
     )?;
-    let rows = stmt.query_map([], row_to_response)?;
+    let rows = statement.query_map([], row_to_response)?;
     rows.collect()
 }
 
 /// Finds a player by their UUID (surrogate key, admin route).
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<PlayerResponse>, rusqlite::Error> {
-    let mut stmt = conn.prepare(
+pub fn get_by_id(
+    connection: &Connection,
+    id: &str,
+) -> Result<Option<PlayerResponse>, rusqlite::Error> {
+    let mut statement = connection.prepare(
         "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
                 position, abbr_position, team, league, starting11
          FROM players WHERE id = ?1",
     )?;
-    let mut rows = stmt.query_map([id], row_to_response)?;
+    let mut rows = statement.query_map([id], row_to_response)?;
     rows.next().transpose()
 }
 
 /// Finds a player by their squad number (jersey number).
 pub fn get_by_squad_number(
-    conn: &Connection,
+    connection: &Connection,
     squad_number: u32,
 ) -> Result<Option<PlayerResponse>, rusqlite::Error> {
-    let mut stmt = conn.prepare(
+    let mut statement = connection.prepare(
         "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
                 position, abbr_position, team, league, starting11
          FROM players WHERE squad_number = ?1",
     )?;
-    let mut rows = stmt.query_map([squad_number], row_to_response)?;
+    let mut rows = statement.query_map([squad_number], row_to_response)?;
     rows.next().transpose()
 }
 
@@ -89,8 +92,11 @@ pub fn get_by_squad_number(
 ///
 /// Validates that the squad number is not already in use, generates a new UUID v4,
 /// and inserts the player into the database.
-pub fn create(conn: &Connection, request: PlayerRequest) -> Result<PlayerResponse, CreateError> {
-    let exists: bool = conn
+pub fn create(
+    connection: &Connection,
+    request: PlayerRequest,
+) -> Result<PlayerResponse, CreateError> {
+    let exists: bool = connection
         .query_row(
             "SELECT EXISTS(SELECT 1 FROM players WHERE squad_number = ?1)",
             [request.squad_number],
@@ -103,7 +109,7 @@ pub fn create(conn: &Connection, request: PlayerRequest) -> Result<PlayerRespons
     }
 
     let new_id = Uuid::new_v4().to_string();
-    conn.execute(
+    connection.execute(
         "INSERT INTO players (id, first_name, middle_name, last_name, date_of_birth, squad_number, position, abbr_position, team, league, starting11)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         rusqlite::params![
@@ -129,7 +135,7 @@ pub fn create(conn: &Connection, request: PlayerRequest) -> Result<PlayerRespons
         _ => CreateError::Database(e),
     })?;
 
-    get_by_id(conn, &new_id)
+    get_by_id(connection, &new_id)
         .map_err(CreateError::Database)?
         .ok_or_else(|| CreateError::Database(rusqlite::Error::QueryReturnedNoRows))
 }
@@ -139,33 +145,34 @@ pub fn create(conn: &Connection, request: PlayerRequest) -> Result<PlayerRespons
 /// The UUID and squad number are immutable — they are preserved from the
 /// existing record regardless of what the request body contains.
 pub fn update(
-    conn: &Connection,
+    connection: &Connection,
     squad_number: u32,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, UpdateError> {
-    let existing = get_by_squad_number(conn, squad_number)
+    let existing = get_by_squad_number(connection, squad_number)
         .map_err(UpdateError::Database)?
         .ok_or(UpdateError::NotFound)?;
 
-    conn.execute(
-        "UPDATE players
+    connection
+        .execute(
+            "UPDATE players
          SET first_name = ?1, middle_name = ?2, last_name = ?3, date_of_birth = ?4,
              position = ?5, abbr_position = ?6, team = ?7, league = ?8, starting11 = ?9
          WHERE squad_number = ?10",
-        rusqlite::params![
-            request.first_name,
-            request.middle_name,
-            request.last_name,
-            request.date_of_birth,
-            request.position,
-            request.abbr_position,
-            request.team,
-            request.league,
-            i32::from(request.starting11),
-            squad_number,
-        ],
-    )
-    .map_err(UpdateError::Database)?;
+            rusqlite::params![
+                request.first_name,
+                request.middle_name,
+                request.last_name,
+                request.date_of_birth,
+                request.position,
+                request.abbr_position,
+                request.team,
+                request.league,
+                i32::from(request.starting11),
+                squad_number,
+            ],
+        )
+        .map_err(UpdateError::Database)?;
 
     Ok(PlayerResponse {
         id: existing.id,
@@ -185,8 +192,8 @@ pub fn update(
 /// Deletes a player from the database by their squad number (natural key).
 ///
 /// Returns `true` if a row was deleted, `false` if no match was found.
-pub fn delete(conn: &Connection, squad_number: u32) -> Result<bool, rusqlite::Error> {
-    let affected = conn.execute(
+pub fn delete(connection: &Connection, squad_number: u32) -> Result<bool, rusqlite::Error> {
+    let affected = connection.execute(
         "DELETE FROM players WHERE squad_number = ?1",
         [squad_number],
     )?;
