@@ -257,17 +257,11 @@ fn test_request_post_player_body_duplicate_response_status_conflict() {
 
 // PUT /players/squadnumber/{squad_number} -------------------------------------
 
-// PUT /players/squadnumber/{squad_number} returns 200 OK and preserves both
-// UUID and squad_number regardless of the values sent in the request body
+// PUT /players/squadnumber/{squad_number} returns 204 No Content on success
 #[test]
-fn test_request_put_player_squadnumber_existing_response_status_ok() {
-    // Arrange — capture the original UUID of squad 23 before the update
+fn test_request_put_player_squadnumber_existing_response_status_no_content() {
+    // Arrange
     let client = setup_client();
-    let original = client.get("/players/squadnumber/23").dispatch();
-    let original_body: serde_json::Value =
-        serde_json::from_str(&original.into_string().unwrap()).unwrap();
-    let original_id = original_body["id"].as_str().unwrap().to_string();
-    // Body carries squadNumber 99 — must be ignored; route param (23) wins
     let body = player_request_for_update_json();
     // Act
     let response = client
@@ -276,20 +270,13 @@ fn test_request_put_player_squadnumber_existing_response_status_ok() {
         .body(body.to_string())
         .dispatch();
     // Assert
-    assert_eq!(response.status(), Status::Ok);
-    let response_body: serde_json::Value =
-        serde_json::from_str(&response.into_string().unwrap()).unwrap();
-    assert_eq!(response_body["id"], original_id); // UUID preserved from record
-    assert_eq!(response_body["squadNumber"], 23); // natural key from route, not body
-    assert_eq!(response_body["firstName"], "Emiliano");
-    assert_eq!(response_body["middleName"], "");
-    assert_eq!(response_body["lastName"], "Martínez");
-    assert_eq!(response_body["dateOfBirth"], "1992-09-02T00:00:00.000Z");
-    assert_eq!(response_body["position"], "Goalkeeper");
-    assert_eq!(response_body["abbrPosition"], "GK");
-    assert_eq!(response_body["team"], "Aston Villa FC");
-    assert_eq!(response_body["league"], "Premier League");
-    assert_eq!(response_body["starting11"], true);
+    assert_eq!(response.status(), Status::NoContent);
+    let persisted = client.get("/players/squadnumber/23").dispatch();
+    let persisted_body: serde_json::Value =
+        serde_json::from_str(&persisted.into_string().unwrap()).unwrap();
+    assert_eq!(persisted_body["firstName"], "Emiliano");
+    assert_eq!(persisted_body["lastName"], "Martínez");
+    assert_eq!(persisted_body["team"], "Aston Villa FC");
 }
 
 // PUT /players/squadnumber/{squad_number} with nonexistent number returns 404

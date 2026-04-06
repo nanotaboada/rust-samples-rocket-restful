@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG: added Ballon d'Or nominees list (A-Z) as release codenames (#26)
 
 ### Changed
+- `PUT /players/squadnumber/{squad_number}` now returns `204 No Content` with no body on success (#63)
 - `initialize_database()` reads `STORAGE_PATH` environment variable for the database path, falling back to `storage/players-sqlite3.db` (#40)
 - README: added **Containers** section (`docker compose up/down`), fixed `Test the API` curl examples to use correct UUID and fixture data (#40)
 - SQLite persistence via `rusqlite` (bundled feature); database stored at `storage/players-sqlite3.db`
