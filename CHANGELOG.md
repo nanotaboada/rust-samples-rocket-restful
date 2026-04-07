@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `.claude/commands/pre-release.md`: three-phase `/pre-release` slash command for determining next version, preparing release branch, and tagging (#53)
 - `rocket_okapi` integration: OpenAPI 3 spec auto-generated from route annotations; Swagger UI at `/swagger-ui/`, raw spec at `/openapi.json` (#39)
 - `Dockerfile` (multi-stage: `rust:1.88-slim-bookworm` builder → `debian:bookworm-slim` runtime), `compose.yaml`, `.dockerignore`, `scripts/entrypoint.sh`, and `scripts/healthcheck.sh` for container support (#40)
 - `rest/players.rest` with sample HTTP requests for all endpoints, compatible with VS Code REST Client and JetBrains HTTP Client (#40)
