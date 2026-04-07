@@ -8,40 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `.claude/commands/pre-release.md`: three-phase `/pre-release` slash command for determining next version, preparing release branch, and tagging (#53)
-- `rocket_okapi` integration: OpenAPI 3 spec auto-generated from route annotations; Swagger UI at `/swagger-ui/`, raw spec at `/openapi.json` (#39)
-- `Dockerfile` (multi-stage: `rust:1.88-slim-bookworm` builder → `debian:bookworm-slim` runtime), `compose.yaml`, `.dockerignore`, `scripts/entrypoint.sh`, and `scripts/healthcheck.sh` for container support (#40)
-- `rest/players.rest` with sample HTTP requests for all endpoints, compatible with VS Code REST Client and JetBrains HTTP Client (#40)
-- `humao.rest-client` recommendation added to `.vscode/extensions.json` (#40)
-- `.github/workflows/rust-cd.yml`: tag-based CD workflow triggered on `v*.*.*-*` tags; validates Ballon d'Or nominee name, builds and tests with pinned toolchain `1.88.0`, publishes three Docker tags (`:semver`, `:nominee`, `:latest`) to GHCR, and creates a GitHub Release with commit changelog (#26)
-- README: added **Releases** section with release naming convention, step-by-step create-a-release workflow, pre-release checklist, and Docker pull instructions (#26)
-- CHANGELOG: added Ballon d'Or nominees list (A-Z) as release codenames (#26)
 
 ### Changed
-- `PUT /players/squadnumber/{squad_number}` now returns `204 No Content` with no body on success (#63)
-- Rename all `db` / `conn` / `stmt` abbreviations to `database` / `connection` / `statement` across `src/` and `tests/` (#39)
-- `initialize_database()` reads `STORAGE_PATH` environment variable for the database path, falling back to `storage/players-sqlite3.db` (#40)
-- README: added **Containers** section (`docker compose up/down`), fixed `Test the API` curl examples to use correct UUID and fixture data (#40)
-- SQLite persistence via `rusqlite` (bundled feature); database stored at `storage/players-sqlite3.db`
-- `initialize_database()` opens the committed pre-seeded DB, or creates and seeds it if absent
-- `initialize_test_database()` opens an in-memory SQLite database for use in all test suites
-- Rename `.claude/commands/precommit.md` to `pre-commit.md`; update `CLAUDE.md` reference from `/precommit` to `/pre-commit`
-- `PlayerCollection` type alias changed from `Mutex<Vec<Player>>` to `Mutex<rusqlite::Connection>`
-- All service functions now accept `&rusqlite::Connection` instead of `&[Player]` / `&mut Vec<Player>`
-- All tests updated to use in-memory SQLite (`Connection::open_in_memory()`) instead of a `Vec<Player>` seed
-- Removed `Player` internal storage struct (no longer needed; SQL rows map directly to `PlayerResponse`)
-- Normalize player dataset: correct Fernández/Mac Allister/Messi team data, replace hardcoded random UUIDs with deterministic UUID v5 values (namespace FIFA_WORLD_CUP_QATAR_2022_ARGENTINA_SQUAD)
-- Align CRUD test fixtures: Lo Celso (squad 27) for Create and Delete, Messi (squad 10) for Retrieve, Damián Martínez (squad 23) for Update
-- `.github/workflows/rust.yml` renamed to `rust-ci.yml`; CI badge in README updated accordingly (#26)
 
-## [0.1.0] - 2025-01-01
+### Fixed
 
-### Added
-- Initial release: REST API for managing football players built with Rust and Rocket
-- CRUD operations with in-memory thread-safe storage (`Mutex<Vec<Player>>`)
-- Argentina 2022 World Cup squad seed data (26 players)
-- Layered architecture: routes → services → state
-- Integration tests following Arrange/Act/Assert pattern
+### Removed
+
+## [1.0.0 - Agüero] - 2026-04-06
+
+Initial release. See [README.md](README.md) for complete feature list and documentation.
 
 ---
 
@@ -77,3 +53,6 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 | X | `xavi` | Xavi | Spain | 2009, 2010, 2011 |
 | Y | `yayatoure` | Yaya Touré | Ivory Coast | 2011, 2013 |
 | Z | `zlatan` | Zlatan Ibrahimović | Sweden | 2013, 2015 |
+
+[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.0.0-aguero...HEAD
+[1.0.0 - Agüero]: https://github.com/nanotaboada/rust-samples-rocket-restful/releases/tag/v1.0.0-aguero
