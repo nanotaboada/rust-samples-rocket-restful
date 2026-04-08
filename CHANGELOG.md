@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Coverage reporting with `cargo-tarpaulin` and Codecov integration (#42)
+- `codecov.yml` with 80% minimum threshold on `src/services/`, `src/routes/`, `src/repositories/` (#42)
+- Codecov badge in `README.md` (#42)
+
 ### Changed
+
+- Consolidated `commitlint`, `format`, and `lint` CI jobs into a single `lint` job (#42)
 
 ### Fixed
 

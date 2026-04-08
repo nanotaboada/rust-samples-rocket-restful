@@ -2,6 +2,7 @@
 
 [![Rust CI](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-ci.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-ci.yml)
 [![Rust CD](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-cd.yml/badge.svg)](https://github.com/nanotaboada/rust-samples-rocket-restful/actions/workflows/rust-cd.yml)
+[![codecov](https://codecov.io/gh/nanotaboada/rust-samples-rocket-restful/branch/master/graph/badge.svg)](https://codecov.io/gh/nanotaboada/rust-samples-rocket-restful)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg)](https://opensource.org/licenses/MIT)
 ![Dependabot](https://img.shields.io/badge/Dependabot-contributing-025E8C?logo=dependabot&logoColor=white&labelColor=181818)
 ![Copilot](https://img.shields.io/badge/Copilot-contributing-8662C5?logo=githubcopilot&logoColor=white&labelColor=181818)
