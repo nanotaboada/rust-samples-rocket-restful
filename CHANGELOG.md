@@ -9,11 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.1.0 - Benzema] - 2026-04-08
+
+### Added
+
 - Diesel ORM (SQLite backend, r2d2 connection pool) replacing `rusqlite` (#64)
 - Three versioned migrations under `migrations/`: DDL (`20260407000001_create_players`), starting XI seed (`20260407000002_seed_starting_xi`), substitutes seed (`20260407000003_seed_substitutes`) (#64)
 - `src/schema.rs` generated from the `players` table DDL (#64)
 - `src/repositories/player_repository.rs` owning all Diesel DSL queries; services contain no SQL (#64)
 - `Player` (Queryable/Selectable) and `NewPlayer` (Insertable) structs in `src/models/player.rs` (#64)
+- `UNKNOWN_PLAYER_ID` constant in `tests/common/mod.rs` for valid-UUID-absent-from-DB 404 scenarios (#69)
+- `unknown` test cases for GET `/players/{uuid}`, PUT and DELETE `/players/squadnumber/{n}` in `player_routes_tests.rs` (#69)
+- `unknown` test case for `get_by_id` at the service layer in `player_service_tests.rs` (#69)
+- `///` doc comments on all three player ID constants in `tests/common/mod.rs` documenting the `existing` / `nonexistent` / `unknown` vocabulary (#69)
 
 ### Changed
 
@@ -28,26 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.github/copilot-instructions.md`: updated Overview, Tech Stack, Structure, Layer rule, Test fixtures, Never modify, and Add an endpoint workflow (#64)
 - `Dockerfile`: added `COPY migrations/` to builder stage; removed pre-seeded `hold/` copy from runtime stage (#64)
 - `scripts/entrypoint.sh`: simplified — `hold/` seed copy logic removed; migrations handle first-run initialization (#64)
-
-### Removed
-
-- `rusqlite` dependency replaced by `diesel` + `diesel_migrations` + `libsqlite3-sys` (bundled) (#64)
-- Hand-written `create_schema`, `seed`, and `is_empty` functions in `player_collection.rs` (#64)
-
----
-
-- `UNKNOWN_PLAYER_ID` constant in `tests/common/mod.rs` for valid-UUID-absent-from-DB 404 scenarios (#69)
-- `unknown` test cases for GET `/players/{uuid}`, PUT and DELETE `/players/squadnumber/{n}` in `player_routes_tests.rs` (#69)
-- `unknown` test case for `get_by_id` at the service layer in `player_service_tests.rs` (#69)
-- `///` doc comments on all three player ID constants in `tests/common/mod.rs` documenting the `existing` / `nonexistent` / `unknown` vocabulary (#69)
-
-### Changed
+- `Cargo.toml` version aligned with release tag convention: `0.2.0` → `1.1.0` (#64)
 
 ### Fixed
 
 - `service::update` now returns `UpdateError::NotFound` when `repository::update` affects zero rows, closing a TOCTOU gap where a deleted row between the existence check and the update would fabricate a success response (#64)
 
 ### Removed
+
+- `rusqlite` dependency replaced by `diesel` + `diesel_migrations` + `libsqlite3-sys` (bundled) (#64)
+- Hand-written `create_schema`, `seed`, and `is_empty` functions in `player_collection.rs` (#64)
 
 ## [1.0.0 - Agüero] - 2026-04-06
 
@@ -88,5 +92,6 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 | Y | `yayatoure` | Yaya Touré | Ivory Coast | 2011, 2013 |
 | Z | `zlatan` | Zlatan Ibrahimović | Sweden | 2013, 2015 |
 
-[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.0.0-aguero...HEAD
+[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.0-benzema...HEAD
+[1.1.0 - Benzema]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.0.0-aguero...v1.1.0-benzema
 [1.0.0 - Agüero]: https://github.com/nanotaboada/rust-samples-rocket-restful/releases/tag/v1.0.0-aguero
