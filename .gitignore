@@ -1,2 +1,4 @@
 /target
+/storage/
 .claude/settings.local.json
+.envrc
