@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CodeQL Advanced workflow (`.github/workflows/codeql.yml`) for static security analysis on push, pull request, and weekly schedule; covers `actions` and `rust` languages (#77)
 - Coverage reporting with `cargo-tarpaulin` and Codecov integration (#42)
 - `codecov.yml` with 80% minimum threshold on `src/services/`, `src/routes/`, `src/repositories/` (#42)
 - Codecov badge in `README.md` (#42)
