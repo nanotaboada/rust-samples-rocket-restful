@@ -4,12 +4,17 @@
 # ------------------------------------------------------------------------------
 FROM rust:1.88-slim-bookworm AS builder
 
-# Install build dependencies required by rusqlite (bundled feature compiles
-# SQLite from source via the cc crate and needs a C compiler)
+# Install build dependencies:
+# - gcc / pkg-config: required by rusqlite (bundled feature compiles SQLite from source)
+# - musl-tools: provides musl-gcc linker for the x86_64-unknown-linux-musl target
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     pkg-config \
+    musl-tools \
     && rm -rf /var/lib/apt/lists/*
+
+# Add the musl target to produce a fully static binary
+RUN rustup target add x86_64-unknown-linux-musl
 
 WORKDIR /app
 
@@ -23,7 +28,8 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    cargo build --release
+    CC_x86_64_unknown_linux_musl=musl-gcc \
+    cargo build --release --target x86_64-unknown-linux-musl
 
 # Overlay with the real application sources
 COPY src/ ./src/
@@ -35,19 +41,18 @@ COPY Rocket.toml ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     touch src/main.rs && \
-    cargo build --release && \
-    cp target/release/rust-samples-rocket-restful /app/rust-samples-rocket-restful
+    CC_x86_64_unknown_linux_musl=musl-gcc \
+    cargo build --release --target x86_64-unknown-linux-musl && \
+    cp target/x86_64-unknown-linux-musl/release/rust-samples-rocket-restful /app/rust-samples-rocket-restful
 
 # ------------------------------------------------------------------------------
 # Stage 2: Runtime
 # This stage creates the final, minimal image to run the application.
 # ------------------------------------------------------------------------------
-FROM debian:bookworm-slim AS runtime
+FROM alpine AS runtime
 
 # Install curl for health check
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
@@ -72,8 +77,8 @@ COPY --chmod=555    scripts/entrypoint.sh            ./entrypoint.sh
 COPY --chmod=555    scripts/healthcheck.sh           ./healthcheck.sh
 
 # Add system user and prepare volume mount point
-RUN addgroup --system rocket && \
-    adduser --system --ingroup rocket rocket && \
+RUN addgroup -S rocket && \
+    adduser -S -G rocket rocket && \
     mkdir -p /storage && \
     chown -R rocket:rocket /storage
 

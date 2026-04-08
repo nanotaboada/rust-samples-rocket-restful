@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Consolidated `commitlint`, `format`, and `lint` CI jobs into a single `lint` job (#42)
 - `[profile.release]` tuned in `Cargo.toml` with `lto = true`, `codegen-units = 1`, `strip = true`, `panic = "abort"` for smaller binary size (#60)
+- `Dockerfile` builder stage updated to compile against `x86_64-unknown-linux-musl` via `musl-tools` for a fully static binary; runtime stage switched from `debian:bookworm-slim` to `alpine` (#57)
 - `get_all`, `get_by_id`, `get_by_squad_number`, and `delete` in `player_service` now return `Result<T, PlayerServiceError>` instead of `Result<T, diesel::result::Error>`, aligning with the `CreateError`/`UpdateError` pattern (#56)
 - `codecov.yml` `ignore` list extended with `src/**/mod.rs` to exclude module re-exports from coverage reporting (#78)
 - `codecov.yml` comment updated to reflect goal of maximum coverage on business logic layers (#78)
