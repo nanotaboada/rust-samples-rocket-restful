@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `UNKNOWN_PLAYER_ID` constant in `tests/common/mod.rs` for valid-UUID-absent-from-DB 404 scenarios (#69)
+- `unknown` test cases for GET `/players/{uuid}`, PUT and DELETE `/players/squadnumber/{n}` in `player_routes_tests.rs` (#69)
+- `unknown` test case for `get_by_id` at the service layer in `player_service_tests.rs` (#69)
+- `///` doc comments on all three player ID constants in `tests/common/mod.rs` documenting the `existing` / `nonexistent` / `unknown` vocabulary (#69)
+
 ### Changed
 
 ### Fixed

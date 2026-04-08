@@ -66,6 +66,18 @@ fn test_request_get_player_id_nonexistent_response_body_none() {
     assert!(result.unwrap().is_none());
 }
 
+// GET /players/{uuid} with unknown UUID (valid format, absent from DB) returns None
+#[test]
+fn test_request_get_player_id_unknown_response_body_none() {
+    // Arrange
+    let connection = initialize_test_database();
+    // Act
+    let result = player_service::get_by_id(&connection, common::UNKNOWN_PLAYER_ID);
+    // Assert
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_none());
+}
+
 // GET /players/squadnumber/{squad_number} ------------------------------------
 
 // GET /players/squadnumber/{squad_number} with existing number returns 200 OK
