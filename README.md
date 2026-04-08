@@ -52,29 +52,30 @@ graph RL
     tests[tests]
 
     main[main]
-    Rocket[Rocket]
-
     routes[routes]
+    Rocket[Rocket]
 
     services[services]
 
     repositories[repositories]
+    Diesel[Diesel]
 
-    models[models]
     state[state]
     Serde[Serde]
-    Diesel[Diesel]
+
+    models[models]
 
     %% Dependencies
 
     routes --> main
     Rocket --> main
 
-    Rocket --> routes
     services --> routes
     state --> routes
+    Rocket --> routes
 
     repositories --> services
+
     state --> repositories
     Diesel --> repositories
 
@@ -247,6 +248,7 @@ cargo test -- --nocapture
 | `docker compose down -v` | Stop and remove Docker volume |
 | **AI Commands** | |
 | `/pre-commit` | Runs linting, tests, and quality checks before committing |
+| `/pre-release` | Prepares a release: bumps version, updates CHANGELOG, and opens a PR |
 
 ## Legal
 

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `diesel` and `diesel_migrations` minimum version tightened from `"2.2"` to `"2.3"` (#64)
 - `PlayerCollection` type changed from `Mutex<Connection>` to `r2d2::Pool<ConnectionManager<SqliteConnection>>` (#64)
 - `src/state/player_collection.rs` now runs pending migrations via `embed_migrations!()` on startup; seed data moved from Rust code to SQL migration files (#64)
 - `src/services/player_service.rs` delegates all persistence to the repository layer; error types use `diesel::result::Error` (#64)
@@ -43,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+
+- `service::update` now returns `UpdateError::NotFound` when `repository::update` affects zero rows, closing a TOCTOU gap where a deleted row between the existence check and the update would fabricate a success response (#64)
 
 ### Removed
 

@@ -2,7 +2,8 @@
 //!
 //! Pure functions that validate inputs, enforce invariants (duplicate squad
 //! number check, UUID/squad-number immutability), and delegate all persistence
-//! to [`crate::repositories::player_repository`]. No Diesel imports here.
+//! to [`crate::repositories::player_repository`]. Services are connection-aware
+//! but DSL-free — no Diesel query DSL or schema references here.
 
 use crate::models::player::{NewPlayer, PlayerRequest, PlayerResponse};
 use crate::repositories::player_repository;
@@ -107,8 +108,11 @@ pub fn update(
         .map_err(UpdateError::Database)?
         .ok_or(UpdateError::NotFound)?;
 
-    player_repository::update(conn, squad_number as i32, &request)
+    let updated = player_repository::update(conn, squad_number as i32, &request)
         .map_err(UpdateError::Database)?;
+    if updated == 0 {
+        return Err(UpdateError::NotFound);
+    }
 
     Ok(PlayerResponse {
         id: existing.id,
