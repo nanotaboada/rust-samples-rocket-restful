@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Consolidated `commitlint`, `format`, and `lint` CI jobs into a single `lint` job (#42)
+- `get_all`, `get_by_id`, `get_by_squad_number`, and `delete` in `player_service` now return `Result<T, PlayerServiceError>` instead of `Result<T, diesel::result::Error>`, aligning with the `CreateError`/`UpdateError` pattern (#56)
 - `codecov.yml` `ignore` list extended with `src/**/mod.rs` to exclude module re-exports from coverage reporting (#78)
 - `codecov.yml` comment updated to reflect goal of maximum coverage on business logic layers (#78)
 

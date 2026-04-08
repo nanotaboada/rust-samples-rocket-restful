@@ -10,6 +10,13 @@ use crate::repositories::player_repository;
 use diesel::SqliteConnection;
 use uuid::Uuid;
 
+/// Error type for player read and delete operations.
+#[derive(Debug)]
+pub enum PlayerServiceError {
+    /// An unexpected database error occurred.
+    Database(#[allow(dead_code)] diesel::result::Error),
+}
+
 /// Error types for player creation operations.
 #[derive(Debug)]
 pub enum CreateError {
@@ -29,26 +36,30 @@ pub enum UpdateError {
 }
 
 /// Retrieves all players ordered by squad number.
-pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<PlayerResponse>, diesel::result::Error> {
+pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<PlayerResponse>, PlayerServiceError> {
     player_repository::get_all(conn)
         .map(|players| players.into_iter().map(PlayerResponse::from).collect())
+        .map_err(PlayerServiceError::Database)
 }
 
 /// Finds a player by UUID (surrogate key, admin route).
 pub fn get_by_id(
     conn: &mut SqliteConnection,
     id: &str,
-) -> Result<Option<PlayerResponse>, diesel::result::Error> {
-    player_repository::get_by_id(conn, id).map(|opt| opt.map(PlayerResponse::from))
+) -> Result<Option<PlayerResponse>, PlayerServiceError> {
+    player_repository::get_by_id(conn, id)
+        .map(|opt| opt.map(PlayerResponse::from))
+        .map_err(PlayerServiceError::Database)
 }
 
 /// Finds a player by squad number (natural key).
 pub fn get_by_squad_number(
     conn: &mut SqliteConnection,
     squad_number: u32,
-) -> Result<Option<PlayerResponse>, diesel::result::Error> {
+) -> Result<Option<PlayerResponse>, PlayerServiceError> {
     player_repository::get_by_squad_number(conn, squad_number as i32)
         .map(|opt| opt.map(PlayerResponse::from))
+        .map_err(PlayerServiceError::Database)
 }
 
 /// Creates a new player with an auto-generated UUID.
@@ -132,9 +143,8 @@ pub fn update(
 /// Deletes a player by squad number (natural key).
 ///
 /// Returns `true` if a row was deleted, `false` if no match was found.
-pub fn delete(
-    conn: &mut SqliteConnection,
-    squad_number: u32,
-) -> Result<bool, diesel::result::Error> {
-    player_repository::delete(conn, squad_number as i32).map(|affected| affected > 0)
+pub fn delete(conn: &mut SqliteConnection, squad_number: u32) -> Result<bool, PlayerServiceError> {
+    player_repository::delete(conn, squad_number as i32)
+        .map(|affected| affected > 0)
+        .map_err(PlayerServiceError::Database)
 }
