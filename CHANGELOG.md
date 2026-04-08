@@ -16,10 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Consolidated `commitlint`, `format`, and `lint` CI jobs into a single `lint` job (#42)
+- `codecov.yml` `ignore` list extended with `src/**/mod.rs` to exclude module re-exports from coverage reporting (#78)
+- `codecov.yml` comment updated to reflect goal of maximum coverage on business logic layers (#78)
 
 ### Fixed
 
 ### Removed
+
+- Pre-seeded `storage/players-sqlite3.db` file and `storage/` directory from repository; Diesel `embed_migrations!()` initialises and seeds the database on first start (#79)
+- `storage/` and `.envrc` added to `.gitignore` to prevent runtime database files and local environment secrets from being tracked (#79)
 
 ## [1.1.0 - Benzema] - 2026-04-08
 
