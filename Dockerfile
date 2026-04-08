@@ -51,7 +51,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Stage 2: Runtime
 # This stage creates the final, minimal image to run the application.
 # ------------------------------------------------------------------------------
-FROM --platform=linux/amd64 alpine AS runtime
+FROM --platform=linux/amd64 alpine:3.23 AS runtime
 
 WORKDIR /app
 
