@@ -28,8 +28,8 @@ use rocket_okapi::{openapi, openapi_get_routes_spec};
 #[openapi(tag = "Players")]
 #[get("/players")]
 fn get_all_players(players: &State<PlayerCollection>) -> Result<Json<Vec<PlayerResponse>>, Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_all(&connection)
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
+    player_service::get_all(&mut connection)
         .map(Json)
         .map_err(|_| Status::InternalServerError)
 }
@@ -51,8 +51,8 @@ fn get_player_by_id(
     id: String,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_by_id(&connection, &id)
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
+    player_service::get_by_id(&mut connection, &id)
         .map_err(|_| Status::InternalServerError)?
         .map(Json)
         .ok_or(Status::NotFound)
@@ -75,8 +75,8 @@ fn get_player_by_squad_number(
     squad_number: u32,
     players: &State<PlayerCollection>,
 ) -> Result<Json<PlayerResponse>, Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
-    player_service::get_by_squad_number(&connection, squad_number)
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
+    player_service::get_by_squad_number(&mut connection, squad_number)
         .map_err(|_| Status::InternalServerError)?
         .map(Json)
         .ok_or(Status::NotFound)
@@ -105,9 +105,9 @@ fn create_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<(Status, Json<PlayerResponse>), Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::create(&connection, player_request.into_inner()) {
+    match player_service::create(&mut connection, player_request.into_inner()) {
         Ok(response) => Ok((Status::Created, Json(response))),
         Err(CreateError::DuplicateSquadNumber) => Err(Status::Conflict),
         Err(CreateError::Database(_)) => Err(Status::InternalServerError),
@@ -139,9 +139,9 @@ fn update_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<Status, Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::update(&connection, squad_number, player_request.into_inner()) {
+    match player_service::update(&mut connection, squad_number, player_request.into_inner()) {
         Ok(_) => Ok(Status::NoContent),
         Err(UpdateError::NotFound) => Err(Status::NotFound),
         Err(UpdateError::Database(_)) => Err(Status::InternalServerError),
@@ -161,9 +161,9 @@ fn update_player(
 #[openapi(tag = "Players")]
 #[delete("/players/squadnumber/<squad_number>")]
 fn delete_player(squad_number: u32, players: &State<PlayerCollection>) -> Result<Status, Status> {
-    let connection = players.lock().map_err(|_| Status::InternalServerError)?;
+    let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::delete(&connection, squad_number) {
+    match player_service::delete(&mut connection, squad_number) {
         Ok(true) => Ok(Status::NoContent),
         Ok(false) => Err(Status::NotFound),
         Err(_) => Err(Status::InternalServerError),

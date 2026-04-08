@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Diesel ORM (SQLite backend, r2d2 connection pool) replacing `rusqlite` (#64)
+- Three versioned migrations under `migrations/`: DDL (`20260407000001_create_players`), starting XI seed (`20260407000002_seed_starting_xi`), substitutes seed (`20260407000003_seed_substitutes`) (#64)
+- `src/schema.rs` generated from the `players` table DDL (#64)
+- `src/repositories/player_repository.rs` owning all Diesel DSL queries; services contain no SQL (#64)
+- `Player` (Queryable/Selectable) and `NewPlayer` (Insertable) structs in `src/models/player.rs` (#64)
+
+### Changed
+
+- `diesel` and `diesel_migrations` minimum version tightened from `"2.2"` to `"2.3"` (#64)
+- `PlayerCollection` type changed from `Mutex<Connection>` to `r2d2::Pool<ConnectionManager<SqliteConnection>>` (#64)
+- `src/state/player_collection.rs` now runs pending migrations via `embed_migrations!()` on startup; seed data moved from Rust code to SQL migration files (#64)
+- `src/services/player_service.rs` delegates all persistence to the repository layer; error types use `diesel::result::Error` (#64)
+- All route handlers updated to use `pool.get()` instead of `mutex.lock()` (#64)
+- Four-layer architecture: `Routes → Services → Repository → State` (#64)
+- All integration tests updated to obtain connections from the pool via `.get()` (#64)
+- `README.md`: updated Tech Stack, Features, Docker notes, and Mermaid dependency diagram to reflect new architecture (#64)
+- `.github/copilot-instructions.md`: updated Overview, Tech Stack, Structure, Layer rule, Test fixtures, Never modify, and Add an endpoint workflow (#64)
+- `Dockerfile`: added `COPY migrations/` to builder stage; removed pre-seeded `hold/` copy from runtime stage (#64)
+- `scripts/entrypoint.sh`: simplified — `hold/` seed copy logic removed; migrations handle first-run initialization (#64)
+
+### Removed
+
+- `rusqlite` dependency replaced by `diesel` + `diesel_migrations` + `libsqlite3-sys` (bundled) (#64)
+- Hand-written `create_schema`, `seed`, and `is_empty` functions in `player_collection.rs` (#64)
+
+---
+
 - `UNKNOWN_PLAYER_ID` constant in `tests/common/mod.rs` for valid-UUID-absent-from-DB 404 scenarios (#69)
 - `unknown` test cases for GET `/players/{uuid}`, PUT and DELETE `/players/squadnumber/{n}` in `player_routes_tests.rs` (#69)
 - `unknown` test case for `get_by_id` at the service layer in `player_service_tests.rs` (#69)
@@ -17,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+
+- `service::update` now returns `UpdateError::NotFound` when `repository::update` affects zero rows, closing a TOCTOU gap where a deleted row between the existence check and the update would fabricate a success response (#64)
 
 ### Removed
 

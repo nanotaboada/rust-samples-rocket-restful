@@ -2,7 +2,7 @@
 
 ## Overview
 
-REST API for managing football players built with Rust and Rocket. Implements CRUD operations with SQLite persistence (`rusqlite`, bundled), a layered architecture, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
+REST API for managing football players built with Rust and Rocket. Implements CRUD operations with SQLite persistence (Diesel ORM, r2d2 connection pool, bundled libsqlite3), a four-layer architecture, version-controlled migrations, and Serde JSON serialization. Part of a cross-language comparison study (.NET, Go, Java, Python, TypeScript).
 
 ## Tech Stack
 
@@ -10,25 +10,27 @@ REST API for managing football players built with Rust and Rocket. Implements CR
 - **Framework**: Rocket 0.5 (async)
 - **Serialization**: Serde (JSON)
 - **Unique IDs**: uuid (v4 + serde features)
-- **Storage**: SQLite via `rusqlite` (bundled + trace features), `Mutex<Connection>`
+- **ORM / Migrations**: Diesel (SQLite + r2d2 features) + diesel_migrations; `embed_migrations!()` runs pending migrations on startup
+- **Storage**: SQLite via `libsqlite3-sys` (bundled), r2d2 connection pool (`Pool<ConnectionManager<SqliteConnection>>`)
 - **Testing**: Rust built-in test framework
 
 ## Structure
 
 ```text
 src/
-├── models/             — data structures: PlayerRequest (input), PlayerResponse (output)
-├── routes/             — async Rocket handlers; HTTP concerns only                         [HTTP layer]
-├── services/           — pure business logic; no HTTP knowledge; returns Result types      [business layer]
-└── state/              — thread-safe data access via Mutex<Connection>                     [data layer]
+├── models/             — data structures: Player/NewPlayer (Diesel), PlayerRequest (input), PlayerResponse (output)
+├── repositories/       — all Diesel DSL queries; no HTTP or business logic                [data layer]
+├── routes/             — async Rocket handlers; HTTP concerns only                        [HTTP layer]
+├── schema.rs           — Diesel table! macro generated from the players DDL
+├── services/           — pure business logic; no HTTP knowledge; returns Result types     [business layer]
+└── state/              — r2d2 connection pool init; runs embed_migrations!() on startup   [data layer]
+migrations/             — versioned SQL migrations (DDL + seed data)
 tests/                  — integration tests (Arrange/Act/Assert pattern)
-storage/
-└── players-sqlite3.db  — pre-seeded SQLite database (committed)
 Rocket.toml             — server configuration (address, port)
 rust-toolchain.toml     — Rust 2024 edition lock
 ```
 
-**Layer rule**: `Routes → Services → State`. Routes must not contain business logic. Services must not have HTTP knowledge. State handles all data access.
+**Layer rule**: `Routes → Services → Repository → State`. Routes must not contain business logic. Services must not reference Diesel or SQL directly. Repositories own all data access. State manages the connection pool.
 
 ## Key Design: Surrogate vs. Natural Key
 
@@ -46,7 +48,7 @@ Both `id` (UUID) and `squad_number` are **immutable once set**. On `PUT`, the UU
 - **Errors**: `Result<T, CustomError>` with domain-specific error types; never `unwrap()` or `expect()` in production paths; always propagate with `?`
 - **Safety**: no blocking operations in async handlers; no global mutable state without `Mutex`
 - **Tests**: integration tests in `tests/`; Arrange/Act/Assert with section comments; fixture functions for test data (not stubs); naming `test_request_{method}_{endpoint}_{condition}_response_{verification}`; verify complete response objects
-- **Test fixtures**: use `initialize_test_database()` (defined in `src/state/player_collection.rs`) for the full 26-player seeded in-memory DB; use `initialize_empty_test_database()` (defined in `src/state/player_collection.rs`) for an empty schema with no rows; use `player_request_for_creation()`, `player_request_for_update()`, and `SEED_MESSI_ID` from `tests/common` for request bodies and UUID-based GET tests — never hardcode the UUID string inline
+- **Test fixtures**: use `initialize_test_database()` (defined in `src/state/player_collection.rs`) for the full 26-player seeded in-memory pool (`max_size(1)`); use `initialize_empty_test_database()` for an in-memory pool with schema only (runs first migration, no seed rows); call `pool.get().expect("pool connection")` to obtain a `&mut SqliteConnection` for service calls; use `player_request_for_creation()`, `player_request_for_update()`, and `EXISTING_PLAYER_ID` from `tests/common` for request bodies and UUID-based GET tests — never hardcode the UUID string inline
 - **Avoid**: `unwrap()`/`expect()` in production, unnecessary `.clone()`, blocking in async handlers, missing `?` propagation, inline comments between AAA test sections
 
 ## Commands
@@ -96,8 +98,8 @@ Example: `feat(api): add player stats endpoint (#42)`
 
 ### Never modify
 
-- Seed data in `src/state/player_collection.rs` (without discussion)
-- `storage/players-sqlite3.db` directly — regenerate by deleting and running `cargo run`
+- Seed data in `migrations/` (without discussion)
+- The migration files directly — schema changes go through new versioned migrations
 - Port configuration (9000)
 - `rust-toolchain.toml` toolchain version
 - The surrogate/natural key design (UUID for GET, squad number for PUT/DELETE)
@@ -123,7 +125,7 @@ This project uses Spec-Driven Development (SDD): discuss in Plan mode first, cre
 
 ### Key workflows
 
-**Add an endpoint**: Add route handler in `src/routes/players.rs` → add service function in `src/services/player_service.rs` with `Result<T, CustomError>` return → add integration test in `tests/` following naming convention → update doc comments → run pre-commit checks.
+**Add an endpoint**: Add route handler in `src/routes/players.rs` → add service function in `src/services/player_service.rs` with `Result<T, CustomError>` return → add repository function in `src/repositories/player_repository.rs` using Diesel DSL → add integration test in `tests/` following naming convention → update doc comments → run pre-commit checks.
 
 **After completing work**: Suggest a branch name (e.g. `feat/add-player-stats`) and a commit message following Conventional Commits including co-author line:
 

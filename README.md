@@ -12,11 +12,11 @@ Proof of Concept for a RESTful Web Service built with **Rocket** and **Rust 2024
 
 ## Features
 
-- 🏗️ **Layered Architecture** - Modular design with routes, services, state, and models as distinct packages
-- 🔒 **Thread-Safe State** - SQLite access via Mutex-wrapped managed state using Rocket's `State<T>`
+- 🏗️ **Layered Architecture** - Modular design with routes, services, repositories, state, and models as distinct packages
+- 🔒 **Thread-Safe State** - SQLite access via r2d2 connection pool using Rocket's `State<T>`
 - ✅ **Type Safety** - Strong Rust type system with Serde for request/response serialization
 - 🚦 **Comprehensive Testing** - Integration tests covering all endpoints with real SQLite
-- 🐳 **Containerized Deployment** - Multi-stage Docker builds with pre-seeded database
+- 🐳 **Containerized Deployment** - Multi-stage Docker builds with migration-based database initialization
 - 🔄 **Automated Pipeline** - Continuous integration with cargo test, clippy, and GitHub releases
 
 ## Tech Stack
@@ -27,7 +27,7 @@ Proof of Concept for a RESTful Web Service built with **Rocket** and **Rust 2024
 | **Web Framework** | [Rocket 0.5.1](https://rocket.rs/) |
 | **Serialization** | [Serde](https://serde.rs/) |
 | **Unique IDs** | [uuid](https://github.com/uuid-rs/uuid) |
-| **Database** | [SQLite](https://www.sqlite.org/) via [rusqlite](https://github.com/rusqlite/rusqlite) (bundled) |
+| **ORM / Migrations** | [Diesel](https://diesel.rs/) (SQLite + r2d2 features) + [diesel_migrations](https://docs.rs/diesel_migrations) |
 | **Containerization** | [Docker](https://github.com/docker) & [Docker Compose](https://github.com/docker/compose) |
 
 ## Architecture
@@ -52,24 +52,32 @@ graph RL
     tests[tests]
 
     main[main]
-    Rocket[Rocket]
-
     routes[routes]
+    Rocket[Rocket]
 
     services[services]
 
-    models[models]
+    repositories[repositories]
+    Diesel[Diesel]
+
     state[state]
     Serde[Serde]
+
+    models[models]
 
     %% Dependencies
 
     routes --> main
     Rocket --> main
 
-    Rocket --> routes
     services --> routes
     state --> routes
+    Rocket --> routes
+
+    repositories --> services
+
+    state --> repositories
+    Diesel --> repositories
 
     Serde --> models
 
@@ -77,7 +85,7 @@ graph RL
 
     models -.-> routes
     models -.-> services
-    models -.-> state
+    models -.-> repositories
 
     main -.-> tests
 
@@ -86,8 +94,8 @@ graph RL
     classDef deps fill:#ffcccc,stroke:#ff8f8f,stroke-width:2px,color:#555,font-family:monospace;
     classDef test fill:#ccffcc,stroke:#53c45e,stroke-width:2px,color:#555,font-family:monospace;
 
-    class main,routes,services,state,models core
-    class Rocket,Serde deps
+    class main,routes,services,repositories,state,models core
+    class Rocket,Serde,Diesel deps
     class tests test
 ```
 
@@ -153,7 +161,7 @@ Once the application is running, you can access:
 docker compose up
 ```
 
-> 💡 **Note:** On first run, the container copies a pre-seeded SQLite database into a persistent volume. On subsequent runs, that volume is reused and the data is preserved.
+> 💡 **Note:** On first run, the app automatically runs pending Diesel migrations — creating the schema and seeding the full 26-player squad — and stores the database in a persistent volume. On subsequent runs, migrations are skipped and existing data is preserved.
 
 ### Stop
 
@@ -163,7 +171,7 @@ docker compose down
 
 ### Reset Database
 
-To remove the volume and reinitialize the database from the built-in seed file:
+To remove the volume and let migrations reinitialize the database from scratch on next start:
 
 ```bash
 docker compose down -v
@@ -240,6 +248,7 @@ cargo test -- --nocapture
 | `docker compose down -v` | Stop and remove Docker volume |
 | **AI Commands** | |
 | `/pre-commit` | Runs linting, tests, and quality checks before committing |
+| `/pre-release` | Prepares a release: bumps version, updates CHANGELOG, and opens a PR |
 
 ## Legal
 

@@ -1,107 +1,65 @@
 //! Player business logic and CRUD operations.
 //!
-//! Provides pure functions for player management including validation,
-//! UUID generation, and CRUD operations. These functions are framework-agnostic
-//! and operate on a `rusqlite::Connection`.
+//! Pure functions that validate inputs, enforce invariants (duplicate squad
+//! number check, UUID/squad-number immutability), and delegate all persistence
+//! to [`crate::repositories::player_repository`]. Services are connection-aware
+//! but DSL-free — no Diesel query DSL or schema references here.
 
-use crate::models::player::{PlayerRequest, PlayerResponse};
-use rusqlite::Connection;
+use crate::models::player::{NewPlayer, PlayerRequest, PlayerResponse};
+use crate::repositories::player_repository;
+use diesel::SqliteConnection;
 use uuid::Uuid;
 
 /// Error types for player creation operations.
-///
-/// Represents validation failures that can occur when creating a new player.
 #[derive(Debug)]
 pub enum CreateError {
-    /// The squad number is already assigned to another player
+    /// The squad number is already assigned to another player.
     DuplicateSquadNumber,
-    /// An unexpected database error occurred
-    Database(#[allow(dead_code)] rusqlite::Error),
+    /// An unexpected database error occurred.
+    Database(#[allow(dead_code)] diesel::result::Error),
 }
 
 /// Error types for player update operations.
-///
-/// Represents failures that can occur when updating an existing player.
 #[derive(Debug)]
 pub enum UpdateError {
-    /// No player with the given squad number exists
+    /// No player with the given squad number exists.
     NotFound,
-    /// An unexpected database error occurred
-    Database(#[allow(dead_code)] rusqlite::Error),
+    /// An unexpected database error occurred.
+    Database(#[allow(dead_code)] diesel::result::Error),
 }
 
-/// Maps a `rusqlite::Row` to a `PlayerResponse`.
-fn row_to_response(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayerResponse> {
-    let starting11_int: i32 = row.get(10)?;
-    Ok(PlayerResponse {
-        id: row.get(0)?,
-        first_name: row.get(1)?,
-        middle_name: row.get(2)?,
-        last_name: row.get(3)?,
-        date_of_birth: row.get(4)?,
-        squad_number: row.get(5)?,
-        position: row.get(6)?,
-        abbr_position: row.get(7)?,
-        team: row.get(8)?,
-        league: row.get(9)?,
-        starting11: starting11_int != 0,
-    })
+/// Retrieves all players ordered by squad number.
+pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<PlayerResponse>, diesel::result::Error> {
+    player_repository::get_all(conn)
+        .map(|players| players.into_iter().map(PlayerResponse::from).collect())
 }
 
-/// Retrieves all players and converts them to response format.
-pub fn get_all(connection: &Connection) -> Result<Vec<PlayerResponse>, rusqlite::Error> {
-    let mut statement = connection.prepare(
-        "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
-                position, abbr_position, team, league, starting11
-         FROM players
-         ORDER BY squad_number",
-    )?;
-    let rows = statement.query_map([], row_to_response)?;
-    rows.collect()
-}
-
-/// Finds a player by their UUID (surrogate key, admin route).
+/// Finds a player by UUID (surrogate key, admin route).
 pub fn get_by_id(
-    connection: &Connection,
+    conn: &mut SqliteConnection,
     id: &str,
-) -> Result<Option<PlayerResponse>, rusqlite::Error> {
-    let mut statement = connection.prepare(
-        "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
-                position, abbr_position, team, league, starting11
-         FROM players WHERE id = ?1",
-    )?;
-    let mut rows = statement.query_map([id], row_to_response)?;
-    rows.next().transpose()
+) -> Result<Option<PlayerResponse>, diesel::result::Error> {
+    player_repository::get_by_id(conn, id).map(|opt| opt.map(PlayerResponse::from))
 }
 
-/// Finds a player by their squad number (jersey number).
+/// Finds a player by squad number (natural key).
 pub fn get_by_squad_number(
-    connection: &Connection,
+    conn: &mut SqliteConnection,
     squad_number: u32,
-) -> Result<Option<PlayerResponse>, rusqlite::Error> {
-    let mut statement = connection.prepare(
-        "SELECT id, first_name, middle_name, last_name, date_of_birth, squad_number,
-                position, abbr_position, team, league, starting11
-         FROM players WHERE squad_number = ?1",
-    )?;
-    let mut rows = statement.query_map([squad_number], row_to_response)?;
-    rows.next().transpose()
+) -> Result<Option<PlayerResponse>, diesel::result::Error> {
+    player_repository::get_by_squad_number(conn, squad_number as i32)
+        .map(|opt| opt.map(PlayerResponse::from))
 }
 
-/// Creates a new player with an auto-generated UUID and validation.
+/// Creates a new player with an auto-generated UUID.
 ///
-/// Validates that the squad number is not already in use, generates a new UUID v4,
-/// and inserts the player into the database.
+/// Validates that the squad number is not already in use, generates a UUID v4,
+/// inserts the row, and returns the persisted player.
 pub fn create(
-    connection: &Connection,
+    conn: &mut SqliteConnection,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, CreateError> {
-    let exists: bool = connection
-        .query_row(
-            "SELECT EXISTS(SELECT 1 FROM players WHERE squad_number = ?1)",
-            [request.squad_number],
-            |row| row.get(0),
-        )
+    let exists = player_repository::exists_by_squad_number(conn, request.squad_number as i32)
         .map_err(CreateError::Database)?;
 
     if exists {
@@ -109,35 +67,32 @@ pub fn create(
     }
 
     let new_id = Uuid::new_v4().to_string();
-    connection.execute(
-        "INSERT INTO players (id, first_name, middle_name, last_name, date_of_birth, squad_number, position, abbr_position, team, league, starting11)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-        rusqlite::params![
-            new_id,
-            request.first_name,
-            request.middle_name,
-            request.last_name,
-            request.date_of_birth,
-            request.squad_number,
-            request.position,
-            request.abbr_position,
-            request.team,
-            request.league,
-            i32::from(request.starting11),
-        ],
-    )
-    .map_err(|e| match e {
-        rusqlite::Error::SqliteFailure(err, _)
-            if err.code == rusqlite::ErrorCode::ConstraintViolation =>
-        {
-            CreateError::DuplicateSquadNumber
-        }
+    let new_player = NewPlayer {
+        id: new_id.clone(),
+        first_name: request.first_name,
+        middle_name: request.middle_name,
+        last_name: request.last_name,
+        date_of_birth: request.date_of_birth,
+        squad_number: request.squad_number as i32,
+        position: request.position,
+        abbr_position: request.abbr_position,
+        team: request.team,
+        league: request.league,
+        starting11: i32::from(request.starting11),
+    };
+
+    player_repository::insert(conn, &new_player).map_err(|e| match e {
+        diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::UniqueViolation,
+            _,
+        ) => CreateError::DuplicateSquadNumber,
         _ => CreateError::Database(e),
     })?;
 
-    get_by_id(connection, &new_id)
+    player_repository::get_by_id(conn, &new_id)
         .map_err(CreateError::Database)?
-        .ok_or_else(|| CreateError::Database(rusqlite::Error::QueryReturnedNoRows))
+        .map(PlayerResponse::from)
+        .ok_or(CreateError::Database(diesel::result::Error::NotFound))
 }
 
 /// Updates an existing player's information by squad number.
@@ -145,38 +100,23 @@ pub fn create(
 /// The UUID and squad number are immutable — they are preserved from the
 /// existing record regardless of what the request body contains.
 pub fn update(
-    connection: &Connection,
+    conn: &mut SqliteConnection,
     squad_number: u32,
     request: PlayerRequest,
 ) -> Result<PlayerResponse, UpdateError> {
-    let existing = get_by_squad_number(connection, squad_number)
+    let existing = player_repository::get_by_squad_number(conn, squad_number as i32)
         .map_err(UpdateError::Database)?
         .ok_or(UpdateError::NotFound)?;
 
-    connection
-        .execute(
-            "UPDATE players
-         SET first_name = ?1, middle_name = ?2, last_name = ?3, date_of_birth = ?4,
-             position = ?5, abbr_position = ?6, team = ?7, league = ?8, starting11 = ?9
-         WHERE squad_number = ?10",
-            rusqlite::params![
-                request.first_name,
-                request.middle_name,
-                request.last_name,
-                request.date_of_birth,
-                request.position,
-                request.abbr_position,
-                request.team,
-                request.league,
-                i32::from(request.starting11),
-                squad_number,
-            ],
-        )
+    let updated = player_repository::update(conn, squad_number as i32, &request)
         .map_err(UpdateError::Database)?;
+    if updated == 0 {
+        return Err(UpdateError::NotFound);
+    }
 
     Ok(PlayerResponse {
         id: existing.id,
-        squad_number: existing.squad_number,
+        squad_number: existing.squad_number as u32,
         first_name: request.first_name,
         middle_name: request.middle_name,
         last_name: request.last_name,
@@ -189,13 +129,12 @@ pub fn update(
     })
 }
 
-/// Deletes a player from the database by their squad number (natural key).
+/// Deletes a player by squad number (natural key).
 ///
 /// Returns `true` if a row was deleted, `false` if no match was found.
-pub fn delete(connection: &Connection, squad_number: u32) -> Result<bool, rusqlite::Error> {
-    let affected = connection.execute(
-        "DELETE FROM players WHERE squad_number = ?1",
-        [squad_number],
-    )?;
-    Ok(affected > 0)
+pub fn delete(
+    conn: &mut SqliteConnection,
+    squad_number: u32,
+) -> Result<bool, diesel::result::Error> {
+    player_repository::delete(conn, squad_number as i32).map(|affected| affected > 0)
 }

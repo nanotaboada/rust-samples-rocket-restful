@@ -27,6 +27,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 # Overlay with the real application sources
 COPY src/ ./src/
+COPY migrations/ ./migrations/
 COPY Rocket.toml ./
 
 # Touch main.rs so Cargo detects the change, rebuild only app code, then copy
@@ -69,11 +70,6 @@ COPY --chmod=444    README.md                        ./
 # Copy entrypoint and healthcheck scripts
 COPY --chmod=555    scripts/entrypoint.sh            ./entrypoint.sh
 COPY --chmod=555    scripts/healthcheck.sh           ./healthcheck.sh
-
-# The 'hold' is our storage compartment within the image. Here, we copy a
-# pre-seeded SQLite database file, which Compose will mount as a persistent
-# 'storage' volume when the container starts up.
-COPY --chmod=555    storage/                         ./hold/
 
 # Add system user and prepare volume mount point
 RUN addgroup --system rocket && \
