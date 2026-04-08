@@ -2,7 +2,7 @@
 # Stage 1: Builder
 # This stage builds the application and its dependencies.
 # ------------------------------------------------------------------------------
-FROM rust:1.88-slim-bookworm AS builder
+FROM --platform=linux/amd64 rust:1.88-slim-bookworm AS builder
 
 # -- Install system packages ---------------------------------------------------
 # gcc / pkg-config: required by libsqlite3-sys (bundled feature compiles from
@@ -51,7 +51,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Stage 2: Runtime
 # This stage creates the final, minimal image to run the application.
 # ------------------------------------------------------------------------------
-FROM alpine AS runtime
+FROM --platform=linux/amd64 alpine AS runtime
 
 WORKDIR /app
 
