@@ -192,6 +192,19 @@ fn test_request_get_player_by_id_nonexistent_response_status_not_found() {
     assert_eq!(response.status(), Status::NotFound);
 }
 
+// GET /players/{uuid} with unknown UUID (valid format, absent from DB) returns 404 Not Found
+#[test]
+fn test_request_get_player_by_id_unknown_response_status_not_found() {
+    // Arrange
+    let client = setup_client();
+    // Act
+    let response = client
+        .get(format!("/players/{}", common::UNKNOWN_PLAYER_ID))
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::NotFound);
+}
+
 // GET /players/squadnumber/{squad_number} -------------------------------------
 
 // GET /players/squadnumber/{squad_number} with existing number returns 200 OK
@@ -320,6 +333,22 @@ fn test_request_put_player_squadnumber_nonexistent_response_status_not_found() {
     assert_eq!(response.status(), Status::NotFound);
 }
 
+// PUT /players/squadnumber/{squad_number} with unknown number (valid format, absent from DB) returns 404
+#[test]
+fn test_request_put_player_squadnumber_unknown_response_status_not_found() {
+    // Arrange
+    let client = setup_client();
+    let body = player_request_for_update_json();
+    // Act
+    let response = client
+        .put("/players/squadnumber/28")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::NotFound);
+}
+
 // DELETE /players/squadnumber/{squad_number} ----------------------------------
 
 // DELETE /players/squadnumber/{squad_number} with existing number returns 204
@@ -345,6 +374,17 @@ fn test_request_delete_player_squadnumber_nonexistent_response_status_not_found(
     let client = setup_client();
     // Act
     let response = client.delete("/players/squadnumber/999").dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::NotFound);
+}
+
+// DELETE /players/squadnumber/{squad_number} with unknown number (valid format, absent from DB) returns 404
+#[test]
+fn test_request_delete_player_squadnumber_unknown_response_status_not_found() {
+    // Arrange
+    let client = setup_client();
+    // Act
+    let response = client.delete("/players/squadnumber/28").dispatch();
     // Assert
     assert_eq!(response.status(), Status::NotFound);
 }
