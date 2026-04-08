@@ -15,7 +15,9 @@
 extern crate rocket;
 
 mod models;
+mod repositories;
 mod routes;
+mod schema;
 mod services;
 mod state;
 
@@ -23,7 +25,7 @@ use rocket_okapi::mount_endpoints_and_merged_docs;
 use rocket_okapi::okapi::openapi3::{Info, OpenApi};
 use rocket_okapi::settings::OpenApiSettings;
 use rocket_okapi::swagger_ui::{SwaggerUIConfig, make_swagger_ui};
-use state::player_collection::{PlayerCollection, initialize_database};
+use state::player_collection::initialize_database;
 
 /// Configures and launches the Rocket web server.
 ///
@@ -36,7 +38,7 @@ use state::player_collection::{PlayerCollection, initialize_database};
 /// type, avoiding a verbose type annotation.
 #[launch]
 fn rocket() -> _ {
-    let database = PlayerCollection::new(initialize_database());
+    let database = initialize_database();
     let settings = OpenApiSettings::default();
 
     let mut server = rocket::build().manage(database).mount(

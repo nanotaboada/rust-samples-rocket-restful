@@ -1,14 +1,16 @@
 //! Player domain models and type mappings.
 //!
-//! This module defines the two representations of a player used across the
+//! This module defines the representations of a player used across the
 //! application layers.
 //!
 //! ## Representations
 //!
-//! | Type              | Purpose                                     | Layer  |
-//! |-------------------|---------------------------------------------|--------|
-//! | [`PlayerRequest`] | Inbound API payload (ID excluded)           | routes |
-//! | [`PlayerResponse`]| Outbound API payload (ID included)          | routes |
+//! | Type              | Purpose                                         | Layer      |
+//! |-------------------|-------------------------------------------------|------------|
+//! | [`Player`]        | Diesel Queryable — read from `players` table    | repository |
+//! | [`NewPlayer`]     | Diesel Insertable — write to `players` table    | repository |
+//! | [`PlayerRequest`] | Inbound API payload (ID excluded)               | routes     |
+//! | [`PlayerResponse`]| Outbound API payload (ID included)              | routes     |
 //!
 //! ## Rust note: derive macros
 //!
@@ -20,9 +22,50 @@
 //! - `#[serde(rename_all = "camelCase")]` maps snake_case Rust fields to
 //!   camelCase JSON keys (e.g. `first_name` → `"firstName"`)
 
+use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::okapi::schemars;
 use rocket_okapi::okapi::schemars::JsonSchema;
+
+/// Internal Diesel model for reading a row from the `players` table.
+///
+/// Column order must match the `players` table definition in `schema.rs`.
+/// `squad_number` and `starting11` are `i32` because SQLite's `INTEGER` type
+/// maps to `i32` in Diesel; conversions to `u32` / `bool` happen in
+/// [`PlayerResponse::from`].
+#[derive(Debug, Queryable, Selectable)]
+#[diesel(table_name = crate::schema::players)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Player {
+    pub id: String,
+    pub first_name: String,
+    pub middle_name: String,
+    pub last_name: String,
+    pub date_of_birth: String,
+    pub squad_number: i32,
+    pub position: String,
+    pub abbr_position: String,
+    pub team: String,
+    pub league: String,
+    pub starting11: i32,
+}
+
+/// Internal Diesel model for inserting a new row into the `players` table.
+#[derive(Debug, Insertable)]
+#[diesel(table_name = crate::schema::players)]
+pub struct NewPlayer {
+    pub id: String,
+    pub first_name: String,
+    pub middle_name: String,
+    pub last_name: String,
+    pub date_of_birth: String,
+    pub squad_number: i32,
+    pub position: String,
+    pub abbr_position: String,
+    pub team: String,
+    pub league: String,
+    pub starting11: i32,
+}
 
 /// Inbound payload for creating or updating a player.
 ///
@@ -74,4 +117,22 @@ pub struct PlayerResponse {
     pub team: String,
     pub league: String,
     pub starting11: bool,
+}
+
+impl From<Player> for PlayerResponse {
+    fn from(p: Player) -> Self {
+        PlayerResponse {
+            id: p.id,
+            first_name: p.first_name,
+            middle_name: p.middle_name,
+            last_name: p.last_name,
+            date_of_birth: p.date_of_birth,
+            squad_number: p.squad_number as u32,
+            position: p.position,
+            abbr_position: p.abbr_position,
+            team: p.team,
+            league: p.league,
+            starting11: p.starting11 != 0,
+        }
+    }
 }

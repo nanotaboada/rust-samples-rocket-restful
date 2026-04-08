@@ -7,14 +7,11 @@ mod common;
 
 use rocket::http::{ContentType, Status};
 use rocket::local::blocking::Client;
-use rust_samples_rocket_restful::{
-    routes,
-    state::player_collection::{PlayerCollection, initialize_test_database},
-};
+use rust_samples_rocket_restful::{routes, state::player_collection::initialize_test_database};
 
 // Full 26-player seed — used by all tests except POST creation
 fn setup_client() -> Client {
-    let database = PlayerCollection::new(initialize_test_database());
+    let database = initialize_test_database();
     let rocket = rocket::build()
         .manage(database)
         .mount("/", routes::health::routes())
@@ -27,13 +24,15 @@ fn setup_client() -> Client {
 fn setup_client_for_post() -> Client {
     use rust_samples_rocket_restful::services::player_service;
 
-    let connection = initialize_test_database();
-    // Delete squad 27 if it was somehow seeded; Lo Celso is not in the 26-player
-    // seed, so this is a no-op — but kept for symmetry with the old Vec approach.
-    player_service::delete(&connection, 27).ok();
-    let database = PlayerCollection::new(connection);
+    let pool = initialize_test_database();
+    {
+        let mut conn = pool.get().expect("pool connection");
+        // Lo Celso is not in the 26-player seed, so this is a no-op —
+        // kept for symmetry with previous setup pattern.
+        player_service::delete(&mut conn, 27).ok();
+    }
     let rocket = rocket::build()
-        .manage(database)
+        .manage(pool)
         .mount("/", routes::health::routes())
         .mount("/", routes::players::routes());
     Client::tracked(rocket).expect("valid rocket instance")
@@ -80,7 +79,7 @@ fn test_request_get_openapi_json_response_status_ok() {
     // Arrange
     use rocket_okapi::mount_endpoints_and_merged_docs;
     use rocket_okapi::settings::OpenApiSettings;
-    let database = PlayerCollection::new(initialize_test_database());
+    let database = initialize_test_database();
     let settings = OpenApiSettings::default();
     let mut server = rocket::build().manage(database);
     mount_endpoints_and_merged_docs! {

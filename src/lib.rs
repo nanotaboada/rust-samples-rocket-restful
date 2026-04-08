@@ -11,6 +11,8 @@
 //! the app via the library without starting a real HTTP server.
 
 pub mod models;
+pub mod repositories;
 pub mod routes;
+pub mod schema;
 pub mod services;
 pub mod state;
