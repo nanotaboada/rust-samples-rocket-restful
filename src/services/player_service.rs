@@ -143,10 +143,7 @@ pub fn update(
 /// Deletes a player by squad number (natural key).
 ///
 /// Returns `true` if a row was deleted, `false` if no match was found.
-pub fn delete(
-    conn: &mut SqliteConnection,
-    squad_number: u32,
-) -> Result<bool, PlayerServiceError> {
+pub fn delete(conn: &mut SqliteConnection, squad_number: u32) -> Result<bool, PlayerServiceError> {
     player_repository::delete(conn, squad_number as i32)
         .map(|affected| affected > 0)
         .map_err(PlayerServiceError::Database)
