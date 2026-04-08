@@ -1,5 +1,6 @@
 # Codecov Configuration
-# Goal: 80% minimum coverage on services/, routes/, repositories/ only
+# Goal: maximum coverage on business logic layers (services/, routes/, repositories/)
+# Excludes generated code, entry points, infrastructure wiring, and module re-exports
 
 coverage:
   status:
@@ -24,6 +25,7 @@ ignore:
   - "src/schema.rs"
   - "src/state/**/*"
   - "src/main.rs"
+  - "src/**/mod.rs"
   - "**/*.toml"
   - "**/*.yml"
   - "**/*.yaml"
