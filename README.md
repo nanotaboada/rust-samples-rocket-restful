@@ -154,6 +154,7 @@ Once the application is running, you can access:
 
 - **API Server**: `http://localhost:9000`
 - **Health Check**: `http://localhost:9000/health`
+- **Swagger UI**: `http://localhost:9000/swagger-ui/`
 
 ## Containers
 
@@ -197,8 +198,10 @@ docker pull ghcr.io/nanotaboada/rust-samples-rocket-restful:latest
 ## Environment Variables
 
 ```bash
-# Database storage path (default: ./storage/players-sqlite3.db)
-STORAGE_PATH=./storage/players-sqlite3.db
+# Database storage path
+# Container default (set in Dockerfile): /storage/players-sqlite3.db
+# Local dev fallback (no env var set):   storage/players-sqlite3.db
+STORAGE_PATH=/storage/players-sqlite3.db
 
 # Rocket profile: debug or release (default: debug)
 ROCKET_PROFILE=release

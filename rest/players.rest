@@ -3,9 +3,14 @@
 ###   - VS Code: REST Client extension (humao.rest-client)
 ###   - JetBrains IDEs: built-in HTTP Client
 
-@baseUrl             = http://localhost:9000
-@newSquadNumber      = 27
-@existingSquadNumber = 23
+@baseUrl                = http://localhost:9000
+@existingId             = acc433bf-d505-51fe-831e-45eb44c4d43c
+@nonexistentId          = 00000000-0000-0000-0000-000000000000
+@unknownId              = f47ac10b-58cc-4372-a567-0e02b2c3d479
+@createdSquadNumber     = 27
+@existingSquadNumber    = 23
+@nonexistentSquadNumber = 999
+@unknownSquadNumber     = 28
 
 # -----------------------------------------------------------------------------
 
@@ -15,7 +20,9 @@ GET {{baseUrl}}/health
 
 ###
 
-### Create Player
+# POST /players ---------------------------------------------------------------
+
+### Create Player (valid body)
 # POST /players → 201 Created
 POST {{baseUrl}}/players
 Content-Type: application/json
@@ -25,7 +32,7 @@ Content-Type: application/json
   "middleName": "",
   "lastName": "Lo Celso",
   "dateOfBirth": "1996-07-09T00:00:00.000Z",
-  "squadNumber": 27,
+  "squadNumber": {{createdSquadNumber}},
   "position": "Central Midfield",
   "abbrPosition": "CM",
   "team": "Real Betis Balompié",
@@ -35,26 +42,73 @@ Content-Type: application/json
 
 ###
 
+### Create Player (duplicate squad number)
+# POST /players → 409 Conflict
+# Requires: "Create Player (valid body)" above to have run first.
+POST {{baseUrl}}/players
+Content-Type: application/json
+
+{
+  "firstName": "Giovani",
+  "middleName": "",
+  "lastName": "Lo Celso",
+  "dateOfBirth": "1996-07-09T00:00:00.000Z",
+  "squadNumber": {{createdSquadNumber}},
+  "position": "Central Midfield",
+  "abbrPosition": "CM",
+  "team": "Real Betis Balompié",
+  "league": "La Liga",
+  "starting11": false
+}
+
+###
+
+# GET /players ----------------------------------------------------------------
+
 ### Get All Players
 # GET /players → 200 OK
 GET {{baseUrl}}/players
 
 ###
 
-### Get Player by ID
-# GET /players/:id → 200 OK
-GET {{baseUrl}}/players/acc433bf-d505-51fe-831e-45eb44c4d43c
+# GET /players/{id} -----------------------------------------------------------
+
+### Get Player by ID (existing)
+# GET /players/{id} → 200 OK
+GET {{baseUrl}}/players/{{existingId}}
 
 ###
 
-### Get Player by Squad Number
-# GET /players/squadnumber/:squadnumber → 200 OK
+### Get Player by ID (nonexistent)
+# GET /players/{id} → 404 Not Found
+GET {{baseUrl}}/players/{{nonexistentId}}
+
+###
+
+### Get Player by ID (unknown)
+# GET /players/{id} → 404 Not Found
+GET {{baseUrl}}/players/{{unknownId}}
+
+###
+
+# GET /players/squadnumber/{squad_number} -------------------------------------
+
+### Get Player by Squad Number (existing)
+# GET /players/squadnumber/{squad_number} → 200 OK
 GET {{baseUrl}}/players/squadnumber/10
 
 ###
 
-### Update Player
-# PUT /players/squadnumber/:squadnumber → 200 OK
+### Get Player by Squad Number (nonexistent)
+# GET /players/squadnumber/{squad_number} → 404 Not Found
+GET {{baseUrl}}/players/squadnumber/{{nonexistentSquadNumber}}
+
+###
+
+# PUT /players/squadnumber/{squad_number} -------------------------------------
+
+### Update Player (existing)
+# PUT /players/squadnumber/{squad_number} → 204 No Content
 PUT {{baseUrl}}/players/squadnumber/{{existingSquadNumber}}
 Content-Type: application/json
 
@@ -63,7 +117,7 @@ Content-Type: application/json
   "middleName": "",
   "lastName": "Martínez",
   "dateOfBirth": "1992-09-02T00:00:00.000Z",
-  "squadNumber": 23,
+  "squadNumber": {{existingSquadNumber}},
   "position": "Goalkeeper",
   "abbrPosition": "GK",
   "team": "Aston Villa FC",
@@ -73,9 +127,63 @@ Content-Type: application/json
 
 ###
 
-### Delete Player
-# DELETE /players/squadnumber/:squadnumber → 204 No Content
-# Requires Create Player to have been run first.
-DELETE {{baseUrl}}/players/squadnumber/{{newSquadNumber}}
+### Update Player (nonexistent)
+# PUT /players/squadnumber/{squad_number} → 404 Not Found
+PUT {{baseUrl}}/players/squadnumber/{{nonexistentSquadNumber}}
+Content-Type: application/json
+
+{
+  "firstName": "Emiliano",
+  "middleName": "",
+  "lastName": "Martínez",
+  "dateOfBirth": "1992-09-02T00:00:00.000Z",
+  "squadNumber": {{existingSquadNumber}},
+  "position": "Goalkeeper",
+  "abbrPosition": "GK",
+  "team": "Aston Villa FC",
+  "league": "Premier League",
+  "starting11": true
+}
+
+###
+
+### Update Player (unknown)
+# PUT /players/squadnumber/{squad_number} → 404 Not Found
+PUT {{baseUrl}}/players/squadnumber/{{unknownSquadNumber}}
+Content-Type: application/json
+
+{
+  "firstName": "Emiliano",
+  "middleName": "",
+  "lastName": "Martínez",
+  "dateOfBirth": "1992-09-02T00:00:00.000Z",
+  "squadNumber": {{existingSquadNumber}},
+  "position": "Goalkeeper",
+  "abbrPosition": "GK",
+  "team": "Aston Villa FC",
+  "league": "Premier League",
+  "starting11": true
+}
+
+###
+
+# DELETE /players/squadnumber/{squad_number} ----------------------------------
+
+### Delete Player (existing)
+# DELETE /players/squadnumber/{squad_number} → 204 No Content
+# Requires: "Create Player (valid body)" above to have run first.
+DELETE {{baseUrl}}/players/squadnumber/{{createdSquadNumber}}
+
+###
+
+### Delete Player (nonexistent)
+# DELETE /players/squadnumber/{squad_number} → 404 Not Found
+DELETE {{baseUrl}}/players/squadnumber/{{nonexistentSquadNumber}}
+
+###
+
+### Delete Player (unknown)
+# DELETE /players/squadnumber/{squad_number} → 404 Not Found
+DELETE {{baseUrl}}/players/squadnumber/{{unknownSquadNumber}}
 
 ###

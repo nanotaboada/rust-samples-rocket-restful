@@ -7,7 +7,7 @@ REST API for managing football players built with Rust and Rocket. Implements CR
 ## Tech Stack
 
 - **Language**: Rust 2024 Edition (enforced via `rust-toolchain.toml`)
-- **Framework**: Rocket 0.5 (async)
+- **Framework**: Rocket 0.5.1 (async)
 - **Serialization**: Serde (JSON)
 - **Unique IDs**: uuid (v4 + serde features)
 - **ORM / Migrations**: Diesel (SQLite + r2d2 features) + diesel_migrations; `embed_migrations!()` runs pending migrations on startup
