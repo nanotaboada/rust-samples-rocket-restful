@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- API Reference table in `README.md`: corrected `PUT /players/squadnumber/:squadnumber` response from `200 OK` to `204 No Content`
+
 ### Removed
 
 ## [1.1.1 - Cannavaro] - 2026-04-12
