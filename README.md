@@ -111,7 +111,7 @@ graph RL
 | `GET` | `/players/:id` | Get player by ID | `200 OK` |
 | `GET` | `/players/squadnumber/:squadnumber` | Get player by squad number | `200 OK` |
 | `POST` | `/players` | Create new player | `201 Created` |
-| `PUT` | `/players/squadnumber/:squadnumber` | Update player by squad number | `200 OK` |
+| `PUT` | `/players/squadnumber/:squadnumber` | Update player by squad number | `204 No Content` |
 | `DELETE` | `/players/squadnumber/:squadnumber` | Remove player by squad number | `204 No Content` |
 | `GET` | `/health` | Health check | `200 OK` |
 

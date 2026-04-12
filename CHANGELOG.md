@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.1.1 - Cannavaro] - 2026-04-12
+
+### Added
+
 - CodeQL Advanced workflow (`.github/workflows/codeql.yml`) for static security analysis on push, pull request, and weekly schedule; covers `actions` and `rust` languages (#77)
 - Coverage reporting with `cargo-tarpaulin` and Codecov integration (#42)
 - `codecov.yml` with 80% minimum threshold on `src/services/`, `src/routes/`, `src/repositories/` (#42)
@@ -24,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `codecov.yml` comment updated to reflect goal of maximum coverage on business logic layers (#78)
 
 ### Fixed
+
+- API Reference table in `README.md`: corrected `PUT /players/squadnumber/:squadnumber` response from `200 OK` to `204 No Content`
 
 ### Removed
 
@@ -107,6 +119,7 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 | Y | `yayatoure` | Yaya Touré | Ivory Coast | 2011, 2013 |
 | Z | `zlatan` | Zlatan Ibrahimović | Sweden | 2013, 2015 |
 
-[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.0-benzema...HEAD
+[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.1-cannavaro...HEAD
+[1.1.1 - Cannavaro]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.0-benzema...v1.1.1-cannavaro
 [1.1.0 - Benzema]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.0.0-aguero...v1.1.0-benzema
 [1.0.0 - Agüero]: https://github.com/nanotaboada/rust-samples-rocket-restful/releases/tag/v1.0.0-aguero
