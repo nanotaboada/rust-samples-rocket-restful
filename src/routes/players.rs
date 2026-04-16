@@ -17,6 +17,10 @@ use rocket::{State, delete, get, http::Status, post, put, serde::json::Json};
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use validator::Validate;
 
+fn validate_payload<T: Validate>(payload: &T) -> Result<(), Status> {
+    payload.validate().map_err(|_| Status::UnprocessableEntity)
+}
+
 /// GET /players - Retrieves all players in the collection.
 ///
 /// # Returns
@@ -107,9 +111,7 @@ fn create_player(
     players: &State<PlayerCollection>,
 ) -> Result<(Status, Json<PlayerResponse>), Status> {
     let payload = player_request.into_inner();
-    if payload.validate().is_err() {
-        return Err(Status::UnprocessableEntity);
-    }
+    validate_payload(&payload)?;
     let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
     match player_service::create(&mut connection, payload) {
@@ -145,9 +147,7 @@ fn update_player(
     players: &State<PlayerCollection>,
 ) -> Result<Status, Status> {
     let payload = player_request.into_inner();
-    if payload.validate().is_err() {
-        return Err(Status::UnprocessableEntity);
-    }
+    validate_payload(&payload)?;
     let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
     match player_service::update(&mut connection, squad_number, payload) {

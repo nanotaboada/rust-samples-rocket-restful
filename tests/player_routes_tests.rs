@@ -355,18 +355,8 @@ fn test_request_put_player_squadnumber_unknown_response_status_not_found() {
 fn test_request_post_players_body_empty_first_name_response_status_unprocessable_entity() {
     // Arrange
     let client = setup_client_for_post();
-    let body = serde_json::json!({
-        "firstName": "",
-        "middleName": "",
-        "lastName": "Lo Celso",
-        "dateOfBirth": "1996-07-09T00:00:00.000Z",
-        "squadNumber": 27,
-        "position": "Central Midfield",
-        "abbrPosition": "CM",
-        "team": "Real Betis Balompié",
-        "league": "La Liga",
-        "starting11": false
-    });
+    let mut body = player_request_for_creation_json();
+    body["firstName"] = serde_json::json!("");
     // Act
     let response = client
         .post("/players")
@@ -382,18 +372,8 @@ fn test_request_post_players_body_empty_first_name_response_status_unprocessable
 fn test_request_post_players_body_squad_number_zero_response_status_unprocessable_entity() {
     // Arrange
     let client = setup_client_for_post();
-    let body = serde_json::json!({
-        "firstName": "Giovani",
-        "middleName": "",
-        "lastName": "Lo Celso",
-        "dateOfBirth": "1996-07-09T00:00:00.000Z",
-        "squadNumber": 0,
-        "position": "Central Midfield",
-        "abbrPosition": "CM",
-        "team": "Real Betis Balompié",
-        "league": "La Liga",
-        "starting11": false
-    });
+    let mut body = player_request_for_creation_json();
+    body["squadNumber"] = serde_json::json!(0);
     // Act
     let response = client
         .post("/players")
@@ -410,18 +390,8 @@ fn test_request_post_players_body_squad_number_above_maximum_response_status_unp
 {
     // Arrange
     let client = setup_client_for_post();
-    let body = serde_json::json!({
-        "firstName": "Giovani",
-        "middleName": "",
-        "lastName": "Lo Celso",
-        "dateOfBirth": "1996-07-09T00:00:00.000Z",
-        "squadNumber": 100,
-        "position": "Central Midfield",
-        "abbrPosition": "CM",
-        "team": "Real Betis Balompié",
-        "league": "La Liga",
-        "starting11": false
-    });
+    let mut body = player_request_for_creation_json();
+    body["squadNumber"] = serde_json::json!(100);
     // Act
     let response = client
         .post("/players")
@@ -439,18 +409,8 @@ fn test_request_post_players_body_squad_number_above_maximum_response_status_unp
 fn test_request_put_player_squadnumber_body_empty_last_name_response_status_unprocessable_entity() {
     // Arrange
     let client = setup_client();
-    let body = serde_json::json!({
-        "firstName": "Emiliano",
-        "middleName": "",
-        "lastName": "",
-        "dateOfBirth": "1992-09-02T00:00:00.000Z",
-        "squadNumber": 23,
-        "position": "Goalkeeper",
-        "abbrPosition": "GK",
-        "team": "Aston Villa FC",
-        "league": "Premier League",
-        "starting11": true
-    });
+    let mut body = player_request_for_update_json();
+    body["lastName"] = serde_json::json!("");
     // Act
     let response = client
         .put("/players/squadnumber/23")
@@ -467,18 +427,8 @@ fn test_request_put_player_squadnumber_body_squad_number_zero_response_status_un
 {
     // Arrange
     let client = setup_client();
-    let body = serde_json::json!({
-        "firstName": "Emiliano",
-        "middleName": "",
-        "lastName": "Martínez",
-        "dateOfBirth": "1992-09-02T00:00:00.000Z",
-        "squadNumber": 0,
-        "position": "Goalkeeper",
-        "abbrPosition": "GK",
-        "team": "Aston Villa FC",
-        "league": "Premier League",
-        "starting11": true
-    });
+    let mut body = player_request_for_update_json();
+    body["squadNumber"] = serde_json::json!(0);
     // Act
     let response = client
         .put("/players/squadnumber/23")
@@ -495,18 +445,8 @@ fn test_request_put_player_squadnumber_body_squad_number_above_maximum_response_
  {
     // Arrange
     let client = setup_client();
-    let body = serde_json::json!({
-        "firstName": "Emiliano",
-        "middleName": "",
-        "lastName": "Martínez",
-        "dateOfBirth": "1992-09-02T00:00:00.000Z",
-        "squadNumber": 100,
-        "position": "Goalkeeper",
-        "abbrPosition": "GK",
-        "team": "Aston Villa FC",
-        "league": "Premier League",
-        "starting11": true
-    });
+    let mut body = player_request_for_update_json();
+    body["squadNumber"] = serde_json::json!(100);
     // Act
     let response = client
         .put("/players/squadnumber/23")
