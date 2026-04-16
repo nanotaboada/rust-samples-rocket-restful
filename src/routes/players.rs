@@ -15,6 +15,11 @@ use crate::services::player_service::{self, CreateError, UpdateError};
 use crate::state::player_collection::PlayerCollection;
 use rocket::{State, delete, get, http::Status, post, put, serde::json::Json};
 use rocket_okapi::{openapi, openapi_get_routes_spec};
+use validator::Validate;
+
+fn validate_payload<T: Validate>(payload: &T) -> Result<(), Status> {
+    payload.validate().map_err(|_| Status::UnprocessableEntity)
+}
 
 /// GET /players - Retrieves all players in the collection.
 ///
@@ -105,9 +110,11 @@ fn create_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<(Status, Json<PlayerResponse>), Status> {
+    let payload = player_request.into_inner();
+    validate_payload(&payload)?;
     let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::create(&mut connection, player_request.into_inner()) {
+    match player_service::create(&mut connection, payload) {
         Ok(response) => Ok((Status::Created, Json(response))),
         Err(CreateError::DuplicateSquadNumber) => Err(Status::Conflict),
         Err(CreateError::Database(_)) => Err(Status::InternalServerError),
@@ -139,9 +146,11 @@ fn update_player(
     player_request: Json<PlayerRequest>,
     players: &State<PlayerCollection>,
 ) -> Result<Status, Status> {
+    let payload = player_request.into_inner();
+    validate_payload(&payload)?;
     let mut connection = players.get().map_err(|_| Status::InternalServerError)?;
 
-    match player_service::update(&mut connection, squad_number, player_request.into_inner()) {
+    match player_service::update(&mut connection, squad_number, payload) {
         Ok(_) => Ok(Status::NoContent),
         Err(UpdateError::NotFound) => Err(Status::NotFound),
         Err(UpdateError::Database(_)) => Err(Status::InternalServerError),

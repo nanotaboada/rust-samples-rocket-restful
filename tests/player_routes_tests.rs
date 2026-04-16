@@ -348,6 +348,115 @@ fn test_request_put_player_squadnumber_unknown_response_status_not_found() {
     assert_eq!(response.status(), Status::NotFound);
 }
 
+// POST /players — validation failures ----------------------------------------
+
+// POST /players with empty required string field returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_empty_first_name_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client_for_post();
+    let mut body = player_request_for_creation_json();
+    body["firstName"] = serde_json::json!("");
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// POST /players with squad_number = 0 (below minimum) returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_squad_number_zero_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client_for_post();
+    let mut body = player_request_for_creation_json();
+    body["squadNumber"] = serde_json::json!(0);
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// POST /players with squad_number = 100 (above maximum) returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_squad_number_above_maximum_response_status_unprocessable_entity()
+{
+    // Arrange
+    let client = setup_client_for_post();
+    let mut body = player_request_for_creation_json();
+    body["squadNumber"] = serde_json::json!(100);
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} — validation failures ---------------
+
+// PUT /players/squadnumber/{squad_number} with empty required string field returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_empty_last_name_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client();
+    let mut body = player_request_for_update_json();
+    body["lastName"] = serde_json::json!("");
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} with squad_number = 0 returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_squad_number_zero_response_status_unprocessable_entity()
+{
+    // Arrange
+    let client = setup_client();
+    let mut body = player_request_for_update_json();
+    body["squadNumber"] = serde_json::json!(0);
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} with squad_number = 100 returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_squad_number_above_maximum_response_status_unprocessable_entity()
+ {
+    // Arrange
+    let client = setup_client();
+    let mut body = player_request_for_update_json();
+    body["squadNumber"] = serde_json::json!(100);
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
 // DELETE /players/squadnumber/{squad_number} ----------------------------------
 
 // DELETE /players/squadnumber/{squad_number} with existing number returns 204

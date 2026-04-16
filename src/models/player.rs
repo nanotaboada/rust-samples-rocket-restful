@@ -26,6 +26,7 @@ use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
 use rocket_okapi::okapi::schemars;
 use rocket_okapi::okapi::schemars::JsonSchema;
+use validator::Validate;
 
 /// Internal Diesel model for reading a row from the `players` table.
 ///
@@ -80,17 +81,25 @@ pub struct NewPlayer {
 /// This struct only needs `Deserialize` because it is only ever read from JSON.
 /// `Clone` and `Serialize` are omitted to keep the type minimal and make
 /// incorrect usage a compile-time error.
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, JsonSchema, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerRequest {
+    #[validate(length(min = 1))]
     pub first_name: String,
     pub middle_name: String,
+    #[validate(length(min = 1))]
     pub last_name: String,
+    #[validate(length(min = 1))]
     pub date_of_birth: String,
+    #[validate(range(min = 1, max = 99))]
     pub squad_number: u32,
+    #[validate(length(min = 1))]
     pub position: String,
+    #[validate(length(min = 1))]
     pub abbr_position: String,
+    #[validate(length(min = 1))]
     pub team: String,
+    #[validate(length(min = 1))]
     pub league: String,
     pub starting11: bool,
 }
