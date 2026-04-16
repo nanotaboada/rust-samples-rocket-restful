@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Field-level validation on `PlayerRequest` payloads using the `validator` crate (`#97`): all required string fields (`first_name`, `last_name`, `date_of_birth`, `position`, `abbr_position`, `team`, `league`) must be non-empty; `squad_number` must be in the range 1–99
+- Six new route-level integration tests covering validation failure scenarios for POST and PUT endpoints (`#97`)
+
 ### Changed
+
+- POST `/players` and PUT `/players/squadnumber/{squad_number}` now return `422 Unprocessable Entity` for field validation failures; `400 Bad Request` is reserved for malformed JSON / wrong `Content-Type` (`#94`, `#97`)
 
 ### Fixed
 

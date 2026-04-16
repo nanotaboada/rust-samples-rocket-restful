@@ -348,6 +348,175 @@ fn test_request_put_player_squadnumber_unknown_response_status_not_found() {
     assert_eq!(response.status(), Status::NotFound);
 }
 
+// POST /players — validation failures ----------------------------------------
+
+// POST /players with empty required string field returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_empty_first_name_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client_for_post();
+    let body = serde_json::json!({
+        "firstName": "",
+        "middleName": "",
+        "lastName": "Lo Celso",
+        "dateOfBirth": "1996-07-09T00:00:00.000Z",
+        "squadNumber": 27,
+        "position": "Central Midfield",
+        "abbrPosition": "CM",
+        "team": "Real Betis Balompié",
+        "league": "La Liga",
+        "starting11": false
+    });
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// POST /players with squad_number = 0 (below minimum) returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_squad_number_zero_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client_for_post();
+    let body = serde_json::json!({
+        "firstName": "Giovani",
+        "middleName": "",
+        "lastName": "Lo Celso",
+        "dateOfBirth": "1996-07-09T00:00:00.000Z",
+        "squadNumber": 0,
+        "position": "Central Midfield",
+        "abbrPosition": "CM",
+        "team": "Real Betis Balompié",
+        "league": "La Liga",
+        "starting11": false
+    });
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// POST /players with squad_number = 100 (above maximum) returns 422 Unprocessable Entity
+#[test]
+fn test_request_post_players_body_squad_number_above_maximum_response_status_unprocessable_entity()
+{
+    // Arrange
+    let client = setup_client_for_post();
+    let body = serde_json::json!({
+        "firstName": "Giovani",
+        "middleName": "",
+        "lastName": "Lo Celso",
+        "dateOfBirth": "1996-07-09T00:00:00.000Z",
+        "squadNumber": 100,
+        "position": "Central Midfield",
+        "abbrPosition": "CM",
+        "team": "Real Betis Balompié",
+        "league": "La Liga",
+        "starting11": false
+    });
+    // Act
+    let response = client
+        .post("/players")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} — validation failures ---------------
+
+// PUT /players/squadnumber/{squad_number} with empty required string field returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_empty_last_name_response_status_unprocessable_entity() {
+    // Arrange
+    let client = setup_client();
+    let body = serde_json::json!({
+        "firstName": "Emiliano",
+        "middleName": "",
+        "lastName": "",
+        "dateOfBirth": "1992-09-02T00:00:00.000Z",
+        "squadNumber": 23,
+        "position": "Goalkeeper",
+        "abbrPosition": "GK",
+        "team": "Aston Villa FC",
+        "league": "Premier League",
+        "starting11": true
+    });
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} with squad_number = 0 returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_squad_number_zero_response_status_unprocessable_entity()
+{
+    // Arrange
+    let client = setup_client();
+    let body = serde_json::json!({
+        "firstName": "Emiliano",
+        "middleName": "",
+        "lastName": "Martínez",
+        "dateOfBirth": "1992-09-02T00:00:00.000Z",
+        "squadNumber": 0,
+        "position": "Goalkeeper",
+        "abbrPosition": "GK",
+        "team": "Aston Villa FC",
+        "league": "Premier League",
+        "starting11": true
+    });
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
+// PUT /players/squadnumber/{squad_number} with squad_number = 100 returns 422
+#[test]
+fn test_request_put_player_squadnumber_body_squad_number_above_maximum_response_status_unprocessable_entity()
+ {
+    // Arrange
+    let client = setup_client();
+    let body = serde_json::json!({
+        "firstName": "Emiliano",
+        "middleName": "",
+        "lastName": "Martínez",
+        "dateOfBirth": "1992-09-02T00:00:00.000Z",
+        "squadNumber": 100,
+        "position": "Goalkeeper",
+        "abbrPosition": "GK",
+        "team": "Aston Villa FC",
+        "league": "Premier League",
+        "starting11": true
+    });
+    // Act
+    let response = client
+        .put("/players/squadnumber/23")
+        .header(ContentType::JSON)
+        .body(body.to_string())
+        .dispatch();
+    // Assert
+    assert_eq!(response.status(), Status::UnprocessableEntity);
+}
+
 // DELETE /players/squadnumber/{squad_number} ----------------------------------
 
 // DELETE /players/squadnumber/{squad_number} with existing number returns 204
