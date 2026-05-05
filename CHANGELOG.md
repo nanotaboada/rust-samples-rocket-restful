@@ -44,6 +44,18 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+---
+
+## [1.1.2 - Drogba] - 2026-05-02
+
+### Added
+
 - Field-level validation on `PlayerRequest` payloads using the `validator` crate (`#97`): all required string fields (`first_name`, `last_name`, `date_of_birth`, `position`, `abbr_position`, `team`, `league`) must be non-empty; `squad_number` must be in the range 1–99
 - Six new route-level integration tests covering validation failure scenarios for POST and PUT endpoints (`#97`)
 
@@ -156,7 +168,8 @@ Initial release. See [README.md](README.md) for complete feature list and docume
 
 -->
 
-[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.1-cannavaro...HEAD
+[unreleased]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.2-drogba...HEAD
+[1.1.2 - Drogba]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.1-cannavaro...v1.1.2-drogba
 [1.1.1 - Cannavaro]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.1.0-benzema...v1.1.1-cannavaro
 [1.1.0 - Benzema]: https://github.com/nanotaboada/rust-samples-rocket-restful/compare/v1.0.0-aguero...v1.1.0-benzema
 [1.0.0 - Agüero]: https://github.com/nanotaboada/rust-samples-rocket-restful/releases/tag/v1.0.0-aguero
