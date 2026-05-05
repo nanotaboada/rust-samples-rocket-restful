@@ -28,8 +28,11 @@ proceeding. Never create a branch, commit, tag, or push without approval.
    - Any entry contains the word **BREAKING** (case-insensitive), a
      `BREAKING CHANGE:` token in a commit footer, or a `!` suffix after
      the commit type/scope (e.g. `feat!:` or `feat(scope)!:`) → **major** bump
-   - Any `### Added` subsection has entries → **minor** bump
-   - Otherwise (only `### Changed`, `### Fixed`, `### Removed`) → **patch** bump
+   - Any `### Added` entry introduces a **new endpoint, request parameter, or
+     client-visible API response** → **minor** bump. Test additions, documentation
+     (ADRs, README, Swagger regen), and internal tooling do **not** qualify.
+   - Otherwise (only `### Changed`, `### Fixed`, `### Removed`, or non-API
+     additions) → **patch** bump
 
 5. Compute the next version:
    - **No tags yet** (step 2 found no matching tag): use `v0.1.0` as the base
