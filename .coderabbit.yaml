@@ -41,65 +41,71 @@ reviews:
     - path: "src/routes/**/*.rs"
       instructions: |
         - Route handlers are HTTP-only: delegate all business logic to services
-        - Verify correct HTTP status codes: 200 OK, 201 Created, 204 No Content, 404 Not Found, 409 Conflict, 422 Unprocessable Entity
-        - Ensure `#[get]`/`#[post]`/`#[put]`/`#[patch]`/`#[delete]` attributes appear directly above `fn`, with doc comment above the attribute
-        - Check that state is accessed via `&State<PlayerCollection>` and locked with `.lock().map_err(|_| Status::InternalServerError)?`
-        - Surrogate key (UUID) is used only for `GET /players/{id}`; all mutation routes use `squad_number` as the natural key
-        - Verify each route module exposes a `pub fn routes() -> Vec<rocket::Route>` function
+        - Verify HTTP status codes: 200 OK, 201 Created, 204 No Content,
+          404 Not Found, 409 Conflict, 422 Unprocessable Entity
+        - Only #[get], #[post], #[put], #[delete] attributes are valid.
+          This API does NOT implement PATCH — flag any #[patch] handler.
+        - State is an r2d2 connection pool injected as
+          &State<Pool<ConnectionManager<SqliteConnection>>>; no manual Mutex locking
+        - Surrogate key (UUID) is used only for GET /players/{id};
+          all mutation routes use squad_number as the natural key
 
     - path: "src/services/**/*.rs"
       instructions: |
-        - Services must be pure business logic with no HTTP knowledge
-        - All fallible functions return `Result<T, CustomError>` with domain-specific error variants
-        - Verify `squad_number` uniqueness is enforced on create
-        - On update, UUID and squad_number are always preserved from the existing record — request body values for these fields are ignored
-        - Functions should accept `&[Player]` or `&mut Vec<Player>` (not `&Vec<Player>`) when a slice suffices
+        - Pure business logic only: no HTTP knowledge, no Diesel or SQL imports
+        - All fallible functions return Result<T, CustomError>
+        - squad_number uniqueness is enforced on create
+        - On update, UUID and squad_number are always preserved from the stored
+          record — request body values for these fields are ignored
+
+    - path: "src/repositories/**/*.rs"
+      instructions: |
+        - All Diesel DSL queries live here; services must not import Diesel directly
+        - Functions return Result<T, CustomError> and propagate errors with ?
+        - Minimize .clone(); prefer references where lifetimes allow
 
     - path: "src/models/**/*.rs"
       instructions: |
         - Maintain three distinct types: `Player` (storage), `PlayerRequest` (input), `PlayerResponse` (output)
         - Verify `serde` derive macros and camelCase JSON field naming (`#[serde(rename_all = "camelCase")]`)
         - `id` (UUID) and `squad_number` are immutable once set — validate that no model allows changing them after creation
-        - `PlayerRequest` fields should all be required except where explicitly optional (e.g. `PATCH` payloads)
+        - All `PlayerRequest` fields are required; this API has no partial-update endpoint
 
     - path: "src/state/**/*.rs"
       instructions: |
-        - `PlayerCollection` is `Mutex<Vec<Player>>` — verify no blocking operations hold the lock longer than needed
-        - Seed data in `initialize_players()` must not be modified without discussion
-        - Check that the module exposes only what is needed for external use
+        - This module initializes the r2d2 connection pool
+          (Pool<ConnectionManager<SqliteConnection>>)
+        - embed_migrations!() must be called on startup to run all pending Diesel
+          migrations before any route is served
+        - No business logic or HTTP knowledge belongs here
 
     - path: "src/main.rs"
       instructions: |
-        - Verify `#[launch]` macro is used to generate `main()`
-        - Check all route modules are mounted at "/"
-        - Ensure state is initialized with `PlayerCollection::new(initialize_players())`
+        - #[launch] macro generates main()
+        - All route modules are mounted at "/"
+        - State must be the r2d2 pool returned by the state initializer
         - Port must remain 9000 (configured in Rocket.toml)
 
     - path: "src/lib.rs"
       instructions: |
-        - Verify all modules (`models`, `routes`, `services`, `state`) are re-exported as `pub mod`
-        - This file exists solely to expose modules to integration tests — keep it minimal
+        - Re-exports all modules as pub mod: models, repositories, routes,
+          schema, services, state
+        - Keep minimal — this file exists only to expose modules to integration tests
 
-    - path: "tests/player_routes_tests.rs"
+    - path: "tests/**/*.rs"
       instructions: |
-        - Integration tests only — import from the library crate (`rust_samples_rocket_restful::`)
-        - Follow AAA pattern with `// Arrange`, `// Act`, `// Assert` section comments
-        - Naming convention: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
-          (e.g. `test_request_get_player_by_id_existing_response_status_ok`)
-        - Use `setup_client()` (full 26-player seed) for all tests except POST creation
-        - Use `setup_client_for_post()` (25-player seed, squad 16 excluded) for POST creation tests
-        - Use `player_request_for_creation_json()` and `player_request_for_update_json()` fixtures — no ad-hoc JSON payloads
-        - Use `common::SEED_MESSI_ID` constant for UUID-based GET tests — never hardcode UUID strings inline
-        - PUT tests must capture the original UUID via GET before calling PUT, then assert the response preserves it
+        - Integration tests only; import from the library crate (`rust_samples_rocket_restful::`)
+        - Follow AAA pattern with // Arrange, // Act, // Assert section comments
+        - Naming: test_request_{method}_{endpoint}_{condition}_response_{verification}
+        - Use initialize_test_database() (full seeded pool) for most tests;
+          imported from the library crate (state::player_collection), NOT from tests/common
+        - Use initialize_empty_test_database() (schema only, no seed rows) where needed;
+          also imported from the library crate
+        - Use player_request_for_creation() and player_request_for_update() from
+          tests/common for request bodies
+        - Use EXISTING_PLAYER_ID from tests/common for UUID-based GET tests —
+          never hardcode UUID strings inline
         - Verify complete response objects (all fields), not just status codes
-
-    - path: "tests/concurrency_tests.rs"
-      instructions: |
-        - Tests the `Mutex<Vec<Player>>` state layer directly — do NOT use `rocket::local::blocking::Client`
-        - `blocking::Client` is not `Sync` and cannot be shared across threads via `Arc`
-        - Use `Arc<PlayerCollection>` + `std::thread` for all concurrency scenarios
-        - Use `common::player_request_for_creation()` as the base fixture and override `squad_number` per thread
-        - Cover: concurrent reads, concurrent unique creates, concurrent duplicate creates, mixed reads/writes
 
   path_filters:
     - "!**/target/**"
@@ -144,10 +150,10 @@ reviews:
           If so, update the relevant sections of README.md to reflect the current state.
           Do not rewrite sections unrelated to the changes.
 
-          ## 3. .github/copilot-instructions.md
+          ## 3. CLAUDE.md
           If the PR introduces patterns, conventions, or architectural decisions that
           should guide future AI-assisted contributions, add or update the relevant
-          instructions in .github/copilot-instructions.md.
+          instructions in CLAUDE.md.
           Focus on things a developer (or AI assistant) unfamiliar with this specific
           Rust/Rocket implementation should know before writing code here.
 
@@ -181,7 +187,7 @@ reviews:
           contract. Check the README or any spec/contract file in the repo for reference.
           Pay special attention to the surrogate vs. natural key design:
           - UUID (`id`) is used only for `GET /players/{uuid}`
-          - `squad_number` is used for all mutation routes (PUT, DELETE, PATCH)
+          - `squad_number` is used for all mutation routes (PUT, DELETE)
           Flag any deviations — missing fields, wrong status codes, inconsistent naming.
           Do not make changes; only report findings as a comment.
 
@@ -315,7 +321,7 @@ knowledge_base:
   code_guidelines:
     enabled: true
     filePatterns:
-      - ".github/copilot-instructions.md"
+      - "CLAUDE.md"
   learnings:
     scope: auto
   issues:
@@ -345,9 +351,11 @@ code_generation:
           - Follow AAA pattern with `// Arrange`, `// Act`, `// Assert` comments
           - Naming: `test_request_{method}_{endpoint}_{condition}_response_{verification}`
           - Use fixture functions for test data — no inline magic values
-          - Use `SEED_MESSI_ID` constant for UUID-based GET tests
-          - HTTP tests use `rocket::local::blocking::Client` via a `setup_client()` helper
-          - Concurrency tests use `Arc<PlayerCollection>` + `std::thread`
+          - Use initialize_test_database() from the library crate (state::player_collection)
+            for the full seeded pool; use initialize_empty_test_database() for schema-only
+          - Use EXISTING_PLAYER_ID from tests/common for UUID-based GET tests —
+            never hardcode UUID strings inline
+          - Concurrency tests clone the r2d2 pool across threads via Pool::clone()
 
 issue_enrichment:
   auto_enrich:
