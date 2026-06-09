@@ -44,6 +44,8 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 
 ### Added
 
+- Architecture Decision Records in `adr/`: 8 ADRs (0001–0008) documenting framework selection, four-layer architecture, Diesel/r2d2/SQLite persistence stack, dual-key strategy, PUT semantics, embedded migrations, integration-only testing, and Docker/Compose strategy (`#113`)
+
 ### Changed
 
 - Consolidated agent instructions from `.github/copilot-instructions.md` into `CLAUDE.md`; deleted the legacy split-file layout (`#112`)
