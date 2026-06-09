@@ -48,6 +48,7 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 
 ### Changed
 
+- Replace `cargo install cargo-tarpaulin` with `taiki-e/install-action@v2.81.8` in CI to use a pre-built binary and reduce coverage job runtime
 - Consolidated agent instructions from `.github/copilot-instructions.md` into `CLAUDE.md`; deleted the legacy split-file layout (`#112`)
 - Rewrote all stale `.coderabbit.yaml` path instructions to reflect the current Diesel/r2d2/SQLite architecture; removed all references to the old `Mutex<Vec<Player>>` in-memory design (`#112`)
 
