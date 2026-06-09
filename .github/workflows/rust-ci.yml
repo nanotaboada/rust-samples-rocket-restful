@@ -114,7 +114,9 @@ jobs:
           key: ${{ runner.os }}-cargo-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin --version 0.35.2 --locked
+        uses: taiki-e/install-action@v2.81.8
+        with:
+          tool: cargo-tarpaulin@0.35.2
 
       - name: Generate coverage report
         run: cargo tarpaulin --out xml
