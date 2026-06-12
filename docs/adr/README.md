@@ -19,6 +19,9 @@ marked `Deprecated` or `Superseded by ADR-XXXX` and a new ADR is written.
 | [0006](0006-embed-migrations-startup-schema.md) | Embedded Migrations at Startup | Accepted |
 | [0007](0007-integration-only-test-strategy.md) | Integration-Only Test Strategy | Accepted |
 | [0008](0008-docker-compose-strategy.md) | Docker and Compose Strategy | Accepted |
+| [0009](0009-ballon-dor-themed-versioning.md) | Use Ballon d'Or-Themed Semantic Versioning | Accepted |
+| [0010](0010-ai-assisted-development-workflow.md) | Adopt AI-Assisted Development Workflow | Accepted |
+| [0011](0011-spec-driven-development.md) | Adopt Spec-Driven Development (SDD) | Accepted |
 
 ## Creating a New ADR
 
