@@ -44,13 +44,17 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 
 ### Added
 
-- Architecture Decision Records in `adr/`: 8 ADRs (0001–0008) documenting framework selection, four-layer architecture, Diesel/r2d2/SQLite persistence stack, dual-key strategy, PUT semantics, embedded migrations, integration-only testing, and Docker/Compose strategy (`#113`)
+- Architecture Decision Records in `docs/adr/`: 8 ADRs (0001–0008) documenting framework selection, four-layer architecture, Diesel/r2d2/SQLite persistence stack, dual-key strategy, PUT semantics, embedded migrations, integration-only testing, and Docker/Compose strategy (`#113`)
+- ADR-0009: Use Ballon d'Or-Themed Semantic Versioning
+- ADR-0010: Adopt AI-Assisted Development Workflow
+- ADR-0011: Adopt Spec-Driven Development (SDD)
 
 ### Changed
 
 - Replace `cargo install cargo-tarpaulin` with `taiki-e/install-action@v2.81.8` in CI to use a pre-built binary and reduce coverage job runtime
 - Consolidated agent instructions from `.github/copilot-instructions.md` into `CLAUDE.md`; deleted the legacy split-file layout (`#112`)
 - Rewrote all stale `.coderabbit.yaml` path instructions to reflect the current Diesel/r2d2/SQLite architecture; removed all references to the old `Mutex<Vec<Player>>` in-memory design (`#112`)
+- Added `cargo tarpaulin --fail-under 80` to the `/pre-commit` checklist to enforce 80% coverage locally
 
 ### Fixed
 

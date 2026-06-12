@@ -70,7 +70,7 @@ cargo test -- --nocapture               # with output
 3. `cargo build` — must succeed
 4. `cargo test` — all tests must pass
 5. Commit message follows Conventional Commits format (enforced by commitlint)
-6. If this commit introduces or changes an architectural decision, update `CLAUDE.md` and create or amend the relevant ADR in `adr/`.
+6. If this commit introduces or changes an architectural decision, update `CLAUDE.md` and create or amend the relevant ADR in `docs/adr/`.
 7. If this commit adds, removes, or changes an endpoint, a dependency, or how the project is run, update `README.md` and the relevant path instructions in `.coderabbit.yaml`.
 
 ### Commits
@@ -148,20 +148,23 @@ Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ## Architecture Decision Records
 
-Architectural decisions are documented in `adr/`. When proposing structural
+Architectural decisions are documented in [`docs/adr/`](docs/adr/README.md). When proposing structural
 changes, check the ADR index first. When a decision changes, mark the existing
 ADR as `Deprecated` or `Superseded by ADR-XXXX` and write a new one.
 
 Current ADRs:
 
-- [ADR-0001](adr/0001-adopt-rocket-as-rest-api-framework.md) — Rocket 0.5 as HTTP framework
-- [ADR-0002](adr/0002-four-layer-architecture.md) — Routes → Services → Repositories → State
-- [ADR-0003](adr/0003-diesel-r2d2-bundled-sqlite.md) — Diesel + r2d2 + bundled libsqlite3
-- [ADR-0004](adr/0004-uuid-surrogate-squad-number-natural-key.md) — UUID surrogate key + squad number natural key
-- [ADR-0005](adr/0005-full-replace-put-no-patch.md) — Full-replace PUT, no PATCH
-- [ADR-0006](adr/0006-embed-migrations-startup-schema.md) — `embed_migrations!()` at startup
-- [ADR-0007](adr/0007-integration-only-test-strategy.md) — Integration-only tests with in-memory SQLite
-- [ADR-0008](adr/0008-docker-compose-strategy.md) — Multi-stage Dockerfile + Compose
+- [ADR-0001](docs/adr/0001-adopt-rocket-as-rest-api-framework.md) — Rocket 0.5 as HTTP framework
+- [ADR-0002](docs/adr/0002-four-layer-architecture.md) — Routes → Services → Repositories → State
+- [ADR-0003](docs/adr/0003-diesel-r2d2-bundled-sqlite.md) — Diesel + r2d2 + bundled libsqlite3
+- [ADR-0004](docs/adr/0004-uuid-surrogate-squad-number-natural-key.md) — UUID surrogate key + squad number natural key
+- [ADR-0005](docs/adr/0005-full-replace-put-no-patch.md) — Full-replace PUT, no PATCH
+- [ADR-0006](docs/adr/0006-embed-migrations-startup-schema.md) — `embed_migrations!()` at startup
+- [ADR-0007](docs/adr/0007-integration-only-test-strategy.md) — Integration-only tests with in-memory SQLite
+- [ADR-0008](docs/adr/0008-docker-compose-strategy.md) — Multi-stage Dockerfile + Compose
+- [ADR-0009](docs/adr/0009-ballon-dor-themed-versioning.md) — Ballon d'Or-themed release codenames
+- [ADR-0010](docs/adr/0010-ai-assisted-development-workflow.md) — Claude Code as primary workflow tool
+- [ADR-0011](docs/adr/0011-spec-driven-development.md) — Spec-Driven Development (SDD)
 
 ## Claude Code
 
