@@ -44,10 +44,7 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 
 ### Added
 
-- Architecture Decision Records in `docs/adr/`: 8 ADRs (0001–0008) documenting framework selection, four-layer architecture, Diesel/r2d2/SQLite persistence stack, dual-key strategy, PUT semantics, embedded migrations, integration-only testing, and Docker/Compose strategy (`#113`)
-- ADR-0009: Use Ballon d'Or-Themed Semantic Versioning
-- ADR-0010: Adopt AI-Assisted Development Workflow
-- ADR-0011: Adopt Spec-Driven Development (SDD)
+- Architecture Decision Records in `docs/adr/`: 11 ADRs (0001–0011) documenting framework selection, four-layer architecture, Diesel/r2d2/SQLite persistence stack, dual-key strategy, PUT semantics, embedded migrations, integration-only testing, Docker/Compose strategy, Ballon d'Or-themed versioning, AI-assisted development workflow, and Spec-Driven Development (`#113`)
 
 ### Changed
 
