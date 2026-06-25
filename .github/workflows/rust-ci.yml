@@ -114,7 +114,7 @@ jobs:
           key: ${{ runner.os }}-cargo-tarpaulin-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-tarpaulin
-        uses: taiki-e/install-action@v2.82.3
+        uses: taiki-e/install-action@v2.82.4
         with:
           tool: cargo-tarpaulin@0.35.2
 
