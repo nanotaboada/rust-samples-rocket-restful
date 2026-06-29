@@ -28,7 +28,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache dependencies
-        uses: actions/cache@v6.0.0
+        uses: actions/cache@v6.1.0
         with:
           path: |
             ~/.cargo/registry
