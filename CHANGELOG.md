@@ -52,6 +52,7 @@ Release codenames follow an A-Z sequence using Ballon d'Or award nominees surnam
 - Consolidated agent instructions from `.github/copilot-instructions.md` into `CLAUDE.md`; deleted the legacy split-file layout (`#112`)
 - Rewrote all stale `.coderabbit.yaml` path instructions to reflect the current Diesel/r2d2/SQLite architecture; removed all references to the old `Mutex<Vec<Player>>` in-memory design (`#112`)
 - Added `cargo tarpaulin --fail-under 80` to the `/pre-commit` checklist to enforce 80% coverage locally
+- Trimmed codebase-derivable content from `CLAUDE.md` (tech stack, directory tree, quick-start commands, ADR list, duplicate commit section); moved issue templates to the `create-issue` skill in `.claude/skills/`; replaced the hardcoded co-author model with the line Claude Code provides in `CLAUDE.md` and the `/pre-commit` command
 
 ### Fixed
 

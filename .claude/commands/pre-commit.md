@@ -19,4 +19,4 @@ Run the pre-commit checklist for this project:
    - If only nitpick-level findings, report them and continue to the commit proposal.
    - If `coderabbit` is not installed, skip this step with a note.
 
-Run steps 2–6, run step 7 (docker build), then run step 8 (CodeRabbit review) if available, report the results clearly, then propose a branch name and commit message for my approval using the format `type(scope): description (#issue)` (max 80 chars; types: `feat` `fix` `chore` `docs` `test` `refactor` `ci` `perf`) followed by a co-author line `Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>`. Do not create the branch or commit until I explicitly confirm.
+Run steps 2–6, run step 7 (docker build), then run step 8 (CodeRabbit review) if available, report the results clearly, then propose a branch name and commit message for my approval using the format `type(scope): description (#issue)` (max 80 chars; types: `feat` `fix` `chore` `docs` `test` `refactor` `ci` `perf`) followed by the co-author line Claude Code provides for the current model. Do not create the branch or commit until I explicitly confirm.

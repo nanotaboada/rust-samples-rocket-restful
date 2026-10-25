@@ -4,31 +4,7 @@
 
 REST API for managing football players built with Rust and Rocket. Implements CRUD operations with SQLite persistence (Diesel ORM, r2d2 connection pool, bundled libsqlite3), a four-layer architecture, version-controlled migrations, and Serde JSON serialization.
 
-## Tech Stack
-
-- **Language**: Rust 2024 Edition (enforced via `rust-toolchain.toml`)
-- **Framework**: Rocket 0.5.1 (async)
-- **Serialization**: Serde (JSON)
-- **Unique IDs**: uuid (v4 + serde features)
-- **ORM / Migrations**: Diesel (SQLite + r2d2 features) + diesel_migrations; `embed_migrations!()` runs pending migrations on startup
-- **Storage**: SQLite via `libsqlite3-sys` (bundled), r2d2 connection pool (`Pool<ConnectionManager<SqliteConnection>>`)
-- **Testing**: Rust built-in test framework
-
-## Structure
-
-```text
-src/
-├── models/             — data structures: Player/NewPlayer (Diesel), PlayerRequest (input), PlayerResponse (output)
-├── repositories/       — all Diesel DSL queries; no HTTP or business logic                [data layer]
-├── routes/             — async Rocket handlers; HTTP concerns only                        [HTTP layer]
-├── schema.rs           — Diesel table! macro generated from the players DDL
-├── services/           — pure business logic; no HTTP knowledge; returns Result types     [business layer]
-└── state/              — r2d2 connection pool init; runs embed_migrations!() on startup   [data layer]
-migrations/             — versioned SQL migrations (DDL + seed data)
-tests/                  — integration tests (Arrange/Act/Assert pattern)
-Rocket.toml             — server configuration (address, port)
-rust-toolchain.toml     — Rust 2024 edition lock
-```
+## Architecture
 
 **Layer rule**: `Routes → Services → Repository → State`. Routes must not contain business logic. Services must not reference Diesel or SQL directly. Repositories own all data access. State manages the connection pool.
 
@@ -53,16 +29,6 @@ Both `id` (UUID) and `squad_number` are **immutable once set**. On `PUT`, the UU
 
 ## Commands
 
-### Quick Start
-
-```bash
-cargo build
-cargo run                               # starts on port 9000
-cargo test
-cargo test test_request_get_players     # run specific test
-cargo test -- --nocapture               # with output
-```
-
 ### Pre-commit Checks
 
 1. `cargo fmt`
@@ -72,12 +38,6 @@ cargo test -- --nocapture               # with output
 5. Commit message follows Conventional Commits format (enforced by commitlint)
 6. If this commit introduces or changes an architectural decision, update `CLAUDE.md` and create or amend the relevant ADR in `docs/adr/`.
 7. If this commit adds, removes, or changes an endpoint, a dependency, or how the project is run, update `README.md` and the relevant path instructions in `.coderabbit.yaml`.
-
-### Commits
-
-Format: `type(scope): description (#issue)` — max 80 chars
-Types: `feat` `fix` `chore` `docs` `test` `refactor` `ci` `perf`
-Example: `feat(api): add player stats endpoint (#42)`
 
 ## Agent Mode
 
@@ -108,22 +68,7 @@ Example: `feat(api): add player stats endpoint (#42)`
 
 ### Creating Issues
 
-This project uses Spec-Driven Development (SDD): discuss in Plan mode first, create a GitHub Issue as the spec artifact, then implement. Always offer to draft an issue before writing code.
-
-**Feature request** (`enhancement` label):
-- **Problem**: the pain point being solved
-- **Proposed Solution**: expected behavior and functionality
-- **Suggested Approach** *(optional)*: implementation plan if known
-- **Acceptance Criteria**: at minimum — behaves as proposed, tests added/updated, no regressions
-- **References**: related issues, docs, or examples
-
-**Bug report** (`bug` label):
-- **Description**: clear summary of the bug
-- **Steps to Reproduce**: numbered, minimal steps
-- **Expected / Actual Behavior**: one section each
-- **Environment**: runtime versions + OS
-- **Additional Context**: logs, screenshots, stack traces
-- **Possible Solution** *(optional)*: suggested fix or workaround
+This project uses Spec-Driven Development (SDD): discuss in Plan mode first, create a GitHub Issue as the spec artifact, then implement. Always offer to draft an issue before writing code. Issue templates live in the `create-issue` skill.
 
 ### Key workflows
 
@@ -134,7 +79,7 @@ This project uses Spec-Driven Development (SDD): discuss in Plan mode first, cre
 ```text
 feat(scope): description (#issue)
 
-Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <the line Claude Code provides for the current model>
 ```
 
 ## Invariants (never change without explicit discussion)
@@ -151,20 +96,6 @@ Co-authored-by: Claude Sonnet 4.6 <noreply@anthropic.com>
 Architectural decisions are documented in [`docs/adr/`](docs/adr/README.md). When proposing structural
 changes, check the ADR index first. When a decision changes, mark the existing
 ADR as `Deprecated` or `Superseded by ADR-XXXX` and write a new one.
-
-Current ADRs:
-
-- [ADR-0001](docs/adr/0001-adopt-rocket-as-rest-api-framework.md) — Rocket 0.5 as HTTP framework
-- [ADR-0002](docs/adr/0002-four-layer-architecture.md) — Routes → Services → Repositories → State
-- [ADR-0003](docs/adr/0003-diesel-r2d2-bundled-sqlite.md) — Diesel + r2d2 + bundled libsqlite3
-- [ADR-0004](docs/adr/0004-uuid-surrogate-squad-number-natural-key.md) — UUID surrogate key + squad number natural key
-- [ADR-0005](docs/adr/0005-full-replace-put-no-patch.md) — Full-replace PUT, no PATCH
-- [ADR-0006](docs/adr/0006-embed-migrations-startup-schema.md) — `embed_migrations!()` at startup
-- [ADR-0007](docs/adr/0007-integration-only-test-strategy.md) — Integration-only tests with in-memory SQLite
-- [ADR-0008](docs/adr/0008-docker-compose-strategy.md) — Multi-stage Dockerfile + Compose
-- [ADR-0009](docs/adr/0009-ballon-dor-themed-versioning.md) — Ballon d'Or-themed release codenames
-- [ADR-0010](docs/adr/0010-ai-assisted-development-workflow.md) — Claude Code as primary workflow tool
-- [ADR-0011](docs/adr/0011-spec-driven-development.md) — Spec-Driven Development (SDD)
 
 ## Claude Code
 
